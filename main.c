@@ -1,5 +1,18 @@
 #include "demo.h"
 
+void ProcessServerMessage(void)
+{
+	switch (MSG_ReadByte()) {
+	case svc_serverdata:
+		ParseServerData();
+		break;
+
+	case svc_configstring:
+		ParseConfigString();
+		break;
+	}
+}
+
 void ParseDemo(const char *filename)
 {
 	FILE *fp;
@@ -14,6 +27,7 @@ void ParseDemo(const char *filename)
 
 	while (1) {
 		bytesread = fread(msg.data, MSGLEN, 1, fp);
+		msg.index = 0;
 		msg.length = MSG_ReadLong();
 
 		printf("Reading: %d bytes\n", msg.length);
@@ -22,8 +36,11 @@ void ParseDemo(const char *filename)
 		}
 
 		fread(msg.data, msg.length, 1, fp);
+		msg.index = 0;
 
-		// process each msg here
+		while (msg.index < msg.length) {
+			ProcessServerMessage();
+		}
 
 		memset(&msg, 0, sizeof(msg_buffer_t));
 	}

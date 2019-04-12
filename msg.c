@@ -30,10 +30,38 @@ int8_t MSG_ReadChar(void)
     return c;
 }
 
+int16_t MSG_ReadShort(void)
+{
+
+	return 	(msg.data[msg.index++] +
+			(msg.data[msg.index++] << 8)) & 0xff;
+}
+
+
 int32_t MSG_ReadLong(void)
 {
 	return 	msg.data[msg.index++] +
 			(msg.data[msg.index++] << 8) +
 			(msg.data[msg.index++] << 16) +
 			(msg.data[msg.index++] << 24);
+}
+
+char *MSG_ReadString(void)
+{
+	static char str[MAX_STRING_CHARS];
+	static char character;
+	size_t i, len = 0;
+
+	do {
+		len++;
+	} while (msg.data[(msg.index + len)] != 0);
+
+	memset(&str, 0, MAX_STRING_CHARS);
+
+	for (i=0; i<len; i++) {
+		character = MSG_ReadByte() & 0x7f;
+		strcat(str,  &character);
+	}
+
+	return str;
 }
