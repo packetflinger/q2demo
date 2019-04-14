@@ -23,3 +23,47 @@ void ParseConfigString(void)
 
 	printf("ConfigString [%d] - %s\n", cs.index, cs.string);
 }
+
+uint32_t ParseEntityBitmask(void)
+{
+	static uint32_t bits;
+
+	bits = MSG_ReadByte();
+
+	if (bits & U_MOREBITS1) {
+		bits |= MSG_ReadByte() << 8;
+	}
+
+	if (bits & U_MOREBITS2) {
+		bits |= MSG_ReadByte() << 16;
+	}
+
+	if (bits & U_MOREBITS3) {
+		bits |= MSG_ReadByte() << 24;
+	}
+
+	return bits;
+}
+
+uint16_t ParseEntityNumber(uint32_t bitmask)
+{
+	static uint16_t number;
+
+	number = (bitmask & U_NUMBER16) ? MSG_ReadShort() : MSG_ReadByte();
+
+	return number;
+}
+
+void ParseBaseline(int index, int bits)
+{
+    if (index < 1 || index >= MAX_EDICTS) {
+        printf("Err: Baseline index out of range\n");
+    }
+
+    MSG_ParseDeltaEntity(NULL, &baselines[index], index, bits, 0);
+
+    printf("Baseline [%d]\n", index);
+}
+
+
+

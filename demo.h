@@ -10,9 +10,14 @@
 
 #define MAX_CFGSTR_CHARS    1024
 #define MAX_STRING_CHARS    2048
-#define MSGLEN                 4
+#define MSGLEN              4
+#define MAX_EDICTS          1024
+#define MAX_STATS           32
 
 typedef unsigned char 	byte;
+
+typedef float vec_t;
+typedef vec_t vec3_t[3];
 
 typedef struct {
 	size_t         length;
@@ -21,6 +26,79 @@ typedef struct {
 } msg_buffer_t;
 
 msg_buffer_t msg;
+
+
+typedef enum {
+    MSG_PS_IGNORE_GUNINDEX      = (1 << 0),
+    MSG_PS_IGNORE_GUNFRAMES     = (1 << 1),
+    MSG_PS_IGNORE_BLEND         = (1 << 2),
+    MSG_PS_IGNORE_VIEWANGLES    = (1 << 3),
+    MSG_PS_IGNORE_DELTAANGLES   = (1 << 4),
+    MSG_PS_IGNORE_PREDICTION    = (1 << 5),      // mutually exclusive with IGNORE_VIEWANGLES
+    MSG_PS_FORCE                = (1 << 7),
+    MSG_PS_REMOVE               = (1 << 8)
+} msgPsFlags_t;
+
+typedef enum {
+    MSG_ES_FORCE        = (1 << 0),
+    MSG_ES_NEWENTITY    = (1 << 1),
+    MSG_ES_FIRSTPERSON  = (1 << 2),
+    MSG_ES_LONGSOLID    = (1 << 3),
+    MSG_ES_UMASK        = (1 << 4),
+    MSG_ES_BEAMORIGIN   = (1 << 5),
+    MSG_ES_SHORTANGLES  = (1 << 6),
+    MSG_ES_REMOVE       = (1 << 7)
+} msgEsFlags_t;
+
+// try to pack the common update flags into the first byte
+#define U_ORIGIN1   (1<<0)
+#define U_ORIGIN2   (1<<1)
+#define U_ANGLE2    (1<<2)
+#define U_ANGLE3    (1<<3)
+#define U_FRAME8    (1<<4)        // frame is a byte
+#define U_EVENT     (1<<5)
+#define U_REMOVE    (1<<6)        // REMOVE this entity, don't add it
+#define U_MOREBITS1 (1<<7)        // read one additional byte
+
+// second byte
+#define U_NUMBER16  (1<<8)        // NUMBER8 is implicit if not set
+#define U_ORIGIN3   (1<<9)
+#define U_ANGLE1    (1<<10)
+#define U_MODEL     (1<<11)
+#define U_RENDERFX8 (1<<12)        // fullbright, etc
+#define U_ANGLE16   (1<<13)
+#define U_EFFECTS8  (1<<14)        // autorotate, trails, etc
+#define U_MOREBITS2 (1<<15)        // read one additional byte
+
+// third byte
+#define U_SKIN8         (1<<16)
+#define U_FRAME16       (1<<17)     // frame is a short
+#define U_RENDERFX16    (1<<18)     // 8 + 16 = 32
+#define U_EFFECTS16     (1<<19)     // 8 + 16 = 32
+#define U_MODEL2        (1<<20)     // weapons, flags, etc
+#define U_MODEL3        (1<<21)
+#define U_MODEL4        (1<<22)
+#define U_MOREBITS3     (1<<23)     // read one additional byte
+
+// fourth byte
+#define U_OLDORIGIN     (1<<24)     // FIXME: get rid of this
+#define U_SKIN16        (1<<25)
+#define U_SOUND         (1<<26)
+#define U_SOLID         (1<<27)
+
+
+// pmove_state_t is the information necessary for client side movement
+// prediction
+typedef enum {
+    // can accelerate and turn
+    PM_NORMAL,
+    PM_SPECTATOR,
+    // no acceleration or turning
+    PM_DEAD,
+    PM_GIB,     // different bounding box
+    PM_FREEZE
+} pmtype_t;
+
 
 typedef enum {
     svc_bad,
@@ -73,12 +151,113 @@ typedef struct {
 	char        string[MAX_CFGSTR_CHARS];
 } srv_configstring_t;
 
+// entity_state_t is the information conveyed from the server
+// in an update message about entities that the client will
+// need to render in some way
+typedef struct entity_state_s {
+    int     number;         // edict index
+
+    vec3_t  origin;
+    vec3_t  angles;
+    vec3_t  old_origin;     // for lerping
+    int     modelindex;
+    int     modelindex2, modelindex3, modelindex4;  // weapons, CTF flags, etc
+    int     frame;
+    int     skinnum;
+    unsigned int        effects;        // PGM - we're filling it, so it needs to be unsigned
+    int     renderfx;
+    int     solid;          // for client side prediction, 8*(bits 0-4) is x/y radius
+                            // 8*(bits 5-9) is z down distance, 8(bits10-15) is z up
+                            // gi.linkentity sets this properly
+    int     sound;          // for looping sounds, to guarantee shutoff
+    int     event;          // impulse events -- muzzle flashes, footsteps, etc
+                            // events only go out for a single frame, they
+                            // are automatically cleared each frame
+} entity_state_t;
+
+entity_state_t baselines[MAX_EDICTS];
+
+// entity and player states are pre-quantized before sending to make delta
+// comparsion easier
+typedef struct {
+    uint16_t    number;
+    int16_t     origin[3];
+    int16_t     angles[3];
+    int16_t     old_origin[3];
+    uint8_t     modelindex;
+    uint8_t     modelindex2;
+    uint8_t     modelindex3;
+    uint8_t     modelindex4;
+    uint32_t    skinnum;
+    uint32_t    effects;
+    uint32_t    renderfx;
+    uint32_t    solid;
+    uint16_t    frame;
+    uint8_t     sound;
+    uint8_t     event;
+} entity_packed_t;
+
+// pmove->pm_flags
+#define PMF_DUCKED          1
+#define PMF_JUMP_HELD       2
+#define PMF_ON_GROUND       4
+#define PMF_TIME_WATERJUMP  8   // pm_time is waterjump
+#define PMF_TIME_LAND       16  // pm_time is time before rejump
+#define PMF_TIME_TELEPORT   32  // pm_time is non-moving time
+#define PMF_NO_PREDICTION   64  // temporarily disables prediction (used for grappling hook)
+#define PMF_TELEPORT_BIT    128 // used by q2pro
+
+// this structure needs to be communicated bit-accurate
+// from the server to the client to guarantee that
+// prediction stays in sync, so no floats are used.
+// if any part of the game code modifies this struct, it
+// will result in a prediction error of some degree.
+typedef struct {
+    pmtype_t    pm_type;
+
+    short       origin[3];      // 12.3
+    short       velocity[3];    // 12.3
+    byte        pm_flags;       // ducked, jump_held, etc
+    byte        pm_time;        // each unit = 8 ms
+    short       gravity;
+    short       delta_angles[3];    // add to command angles to get view direction
+                                    // changed by spawns, rotating objects, and teleporters
+} pmove_state_t;
+
+typedef struct {
+    pmove_state_t   pmove;
+    int16_t         viewangles[3];
+    int8_t          viewoffset[3];
+    int8_t          kick_angles[3];
+    int8_t          gunangles[3];
+    int8_t          gunoffset[3];
+    uint8_t         gunindex;
+    uint8_t         gunframe;
+    uint8_t         blend[4];
+    uint8_t         fov;
+    uint8_t         rdflags;
+    int16_t         stats[MAX_STATS];
+} player_packed_t;
+
 uint8_t MSG_ReadByte(void);
-int16_t MSG_ReadShort(void);
+uint16_t MSG_ReadShort(void);
 int32_t MSG_ReadLong(void);
 char *MSG_ReadString(void);
+uint16_t MSG_ReadCoord(void);
+int16_t MSG_ReadWord(void);
+uint8_t MSG_ReadAngle(void);
+uint16_t MSG_ReadAngle16(void);
+void MSG_ReadPos(vec3_t pos);
+void MSG_ParseDeltaEntity(const entity_state_t *from,
+                          entity_state_t *to,
+                          int            number,
+                          int            bits,
+                          msgEsFlags_t   flags);
 
 void ParseServerData(void);
 void ParseConfigString(void);
+uint16_t ParseEntityNumber(uint32_t bitmask);
+uint32_t ParseEntityBitmask(void);
+void ParseBaseline(int index, int bits);
 
 #endif

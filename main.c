@@ -2,6 +2,9 @@
 
 void ProcessServerMessage(void)
 {
+	uint32_t bitmask;
+	uint16_t number;
+
 	switch (MSG_ReadByte()) {
 	case svc_serverdata:
 		ParseServerData();
@@ -9,6 +12,12 @@ void ProcessServerMessage(void)
 
 	case svc_configstring:
 		ParseConfigString();
+		break;
+
+	case svc_spawnbaseline:
+		bitmask = ParseEntityBitmask();
+		number = ParseEntityNumber(bitmask);
+		ParseBaseline(number, bitmask);
 		break;
 	}
 }
