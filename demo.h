@@ -13,6 +13,10 @@
 #define MSGLEN              4
 #define MAX_EDICTS          1024
 #define MAX_STATS           32
+#define MAX_MAP_AREAS       256
+#define MAX_MAP_AREA_BYTES  (MAX_MAP_AREAS / 8)
+#define SVCMD_BITS          5
+#define SVCMD_MASK          ((1 << SVCMD_BITS) - 1)
 
 typedef unsigned char 	byte;
 
@@ -239,6 +243,51 @@ typedef struct {
     int16_t         stats[MAX_STATS];
 } player_packed_t;
 
+// player_state_t is the information needed in addition to pmove_state_t
+// to rendered a view.  There will only be 10 player_state_t sent each second,
+// but the number of pmove_state_t changes will be reletive to client
+// frame rates
+typedef struct {
+    pmove_state_t   pmove;      // for prediction
+
+    // these fields do not need to be communicated bit-precise
+
+    vec3_t      viewangles;     // for fixed views
+    vec3_t      viewoffset;     // add to pmovestate->origin
+    vec3_t      kick_angles;    // add to view direction to get render angles
+                                // set by weapon kicks, pain effects, etc
+
+    vec3_t      gunangles;
+    vec3_t      gunoffset;
+    int         gunindex;
+    int         gunframe;
+
+    float       blend[4];       // rgba full screen effect
+
+    float       fov;            // horizontal field of view
+
+    int         rdflags;        // refdef flags
+
+    short       stats[MAX_STATS];       // fast status bar updates
+} player_state_t;
+
+typedef struct {
+    bool            valid;
+
+    int             number;
+    int             delta;
+
+    byte            areabits[MAX_MAP_AREA_BYTES];
+    int             areabytes;
+
+    player_state_t  ps;
+    int             clientNum;
+
+    int             numEntities;
+    int             firstEntity;
+} server_frame_t;
+
+void MSG_ReadData(void *out, size_t len);
 uint8_t MSG_ReadByte(void);
 uint16_t MSG_ReadShort(void);
 int32_t MSG_ReadLong(void);
@@ -259,5 +308,6 @@ void ParseConfigString(void);
 uint16_t ParseEntityNumber(uint32_t bitmask);
 uint32_t ParseEntityBitmask(void);
 void ParseBaseline(int index, int bits);
+void ParseFrame(uint32_t extrabits);
 
 #endif

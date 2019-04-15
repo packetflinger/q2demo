@@ -1,17 +1,9 @@
 #include "demo.h"
 
-byte *MSG_ReadData(size_t len)
+void MSG_ReadData(void *out, size_t len)
 {
-    byte *buf = msg.data;
-/*
-    msg_read.readcount += len;
-    msg_read.bitpos = msg_read.readcount << 3;
-
-    if (msg_read.readcount > msg_read.cursize) {
-        return NULL;
-    }
-*/
-    return buf;
+	memcpy(out, &(msg.data[msg.index]), len);
+	msg.index += len;
 }
 
 // unsigned

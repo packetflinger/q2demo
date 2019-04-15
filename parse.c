@@ -65,5 +65,20 @@ void ParseBaseline(int index, int bits)
     printf("Baseline [%d]\n", index);
 }
 
+void ParseFrame(uint32_t extrabits)
+{
+	server_frame_t frame;
+	int suppressed, length;
+
+	memset(&frame, 0, sizeof(server_frame_t));
+
+	frame.number = MSG_ReadLong();
+	frame.delta = MSG_ReadLong();
+	suppressed = MSG_ReadByte();
+	frame.areabytes = MSG_ReadByte();
+	MSG_ReadData(&frame.areabits, frame.areabytes);
+
+	printf("Frame [%d]\n", frame.number);
+}
 
 

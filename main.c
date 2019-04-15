@@ -2,10 +2,14 @@
 
 void ProcessServerMessage(void)
 {
-	uint32_t bitmask;
+	uint32_t cmd, bitmask, extrabits;
 	uint16_t number;
 
-	switch (MSG_ReadByte()) {
+	cmd = MSG_ReadByte();
+	extrabits = cmd >> SVCMD_BITS;
+	cmd &= SVCMD_MASK;
+
+	switch (cmd) {
 	case svc_serverdata:
 		ParseServerData();
 		break;
@@ -18,6 +22,10 @@ void ProcessServerMessage(void)
 		bitmask = ParseEntityBitmask();
 		number = ParseEntityNumber(bitmask);
 		ParseBaseline(number, bitmask);
+		break;
+
+	case svc_frame:
+		ParseFrame(extrabits);
 		break;
 	}
 }
