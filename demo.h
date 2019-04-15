@@ -90,6 +90,26 @@ typedef enum {
 #define U_SOUND         (1<<26)
 #define U_SOLID         (1<<27)
 
+#define PS_M_TYPE           (1<<0)
+#define PS_M_ORIGIN         (1<<1)
+#define PS_M_VELOCITY       (1<<2)
+#define PS_M_TIME           (1<<3)
+#define PS_M_FLAGS          (1<<4)
+#define PS_M_GRAVITY        (1<<5)
+#define PS_M_DELTA_ANGLES   (1<<6)
+
+#define PS_VIEWOFFSET       (1<<7)
+#define PS_VIEWANGLES       (1<<8)
+#define PS_KICKANGLES       (1<<9)
+#define PS_BLEND            (1<<10)
+#define PS_FOV              (1<<11)
+#define PS_WEAPONINDEX      (1<<12)
+#define PS_WEAPONFRAME      (1<<13)
+#define PS_RDFLAGS          (1<<14)
+#define PS_RESERVED         (1<<15)
+
+#define PS_BITS             16
+#define PS_MASK             ((1<<PS_BITS)-1)
 
 // pmove_state_t is the information necessary for client side movement
 // prediction
@@ -287,9 +307,12 @@ typedef struct {
     int             firstEntity;
 } server_frame_t;
 
+server_frame_t frame;
+
 void MSG_ReadData(void *out, size_t len);
 uint8_t MSG_ReadByte(void);
 uint16_t MSG_ReadShort(void);
+int8_t MSG_ReadChar(void);
 int32_t MSG_ReadLong(void);
 char *MSG_ReadString(void);
 uint16_t MSG_ReadCoord(void);
@@ -309,5 +332,7 @@ uint16_t ParseEntityNumber(uint32_t bitmask);
 uint32_t ParseEntityBitmask(void);
 void ParseBaseline(int index, int bits);
 void ParseFrame(uint32_t extrabits);
+void ParsePlayerstate(player_state_t *ps);
+void ParsePacketEntities(void);
 
 #endif

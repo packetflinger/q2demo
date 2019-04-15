@@ -27,6 +27,14 @@ void ProcessServerMessage(void)
 	case svc_frame:
 		ParseFrame(extrabits);
 		break;
+
+	case svc_playerinfo:
+		ParsePlayerstate(&frame.ps);
+		break;
+
+	case svc_packetentities:
+		ParsePacketEntities();
+		break;
 	}
 }
 
