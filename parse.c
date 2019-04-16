@@ -253,3 +253,14 @@ void ParseCenterprint(void)
 
 	printf("Centerprint - %s\n", text);
 }
+
+void ParseMuzzleFlash(void)
+{
+	static uint16_t ent;
+	static byte effect;
+
+	ent = MSG_ReadShort();
+	effect = MSG_ReadByte();
+
+	printf("Muzzleflash - %d\n", effect);
+}

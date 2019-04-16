@@ -47,6 +47,11 @@ void ProcessServerMessage(void)
 	case svc_centerprint:
 		ParseCenterprint();
 		break;
+
+	case svc_muzzleflash2:
+	case svc_muzzleflash:
+		ParseMuzzleFlash();
+		break;
 	}
 }
 

@@ -358,5 +358,6 @@ void ParsePacketEntities(void);
 void ParseSound(void);
 void ParsePrint(void);
 void ParseCenterprint(void);
+void ParseMuzzleFlash(void);
 
 #endif
