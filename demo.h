@@ -357,5 +357,6 @@ void ParsePlayerstate(player_state_t *ps);
 void ParsePacketEntities(void);
 void ParseSound(void);
 void ParsePrint(void);
+void ParseCenterprint(void);
 
 #endif

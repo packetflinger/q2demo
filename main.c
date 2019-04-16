@@ -43,6 +43,10 @@ void ProcessServerMessage(void)
 	case svc_print:
 		ParsePrint();
 		break;
+
+	case svc_centerprint:
+		ParseCenterprint();
+		break;
 	}
 }
 

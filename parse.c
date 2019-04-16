@@ -245,3 +245,11 @@ void ParsePrint(void)
 
 	printf("Print - %s\n", print);
 }
+
+void ParseCenterprint(void)
+{
+	static char *text;
+	text = MSG_ReadString();
+
+	printf("Centerprint - %s\n", text);
+}
