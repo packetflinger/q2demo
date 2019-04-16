@@ -172,5 +172,23 @@ void ParsePlayerstate(player_state_t *ps)
 
 void ParsePacketEntities(void)
 {
+	static uint32_t bits;
+	static uint16_t num;
+	static entity_state_t nullstate;
 
+	printf("PacketEntities - ");
+
+	while (true) {
+		bits = ParseEntityBitmask();
+		num = ParseEntityNumber(bits);
+
+		if (num <= 0) {
+			break;
+		}
+
+		MSG_ParseDeltaEntity(NULL, &nullstate, num, bits, 0);
+		printf("%d ", num);
+	}
+
+	printf("\n");
 }
