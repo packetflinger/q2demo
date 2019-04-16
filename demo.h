@@ -121,6 +121,69 @@ typedef enum {
 #define DEFAULT_SOUND_PACKET_VOLUME         1.0f
 #define DEFAULT_SOUND_PACKET_ATTENUATION    1.0f
 
+typedef enum {
+    TE_GUNSHOT,
+    TE_BLOOD,
+    TE_BLASTER,
+    TE_RAILTRAIL,
+    TE_SHOTGUN,
+    TE_EXPLOSION1,
+    TE_EXPLOSION2,
+    TE_ROCKET_EXPLOSION,
+    TE_GRENADE_EXPLOSION,
+    TE_SPARKS,
+    TE_SPLASH,
+    TE_BUBBLETRAIL,
+    TE_SCREEN_SPARKS,
+    TE_SHIELD_SPARKS,
+    TE_BULLET_SPARKS,
+    TE_LASER_SPARKS,
+    TE_PARASITE_ATTACK,
+    TE_ROCKET_EXPLOSION_WATER,
+    TE_GRENADE_EXPLOSION_WATER,
+    TE_MEDIC_CABLE_ATTACK,
+    TE_BFG_EXPLOSION,
+    TE_BFG_BIGEXPLOSION,
+    TE_BOSSTPORT,           // used as '22' in a map, so DON'T RENUMBER!!!
+    TE_BFG_LASER,
+    TE_GRAPPLE_CABLE,
+    TE_WELDING_SPARKS,
+    TE_GREENBLOOD,
+    TE_BLUEHYPERBLASTER,
+    TE_PLASMA_EXPLOSION,
+    TE_TUNNEL_SPARKS,
+	//ROGUE
+	TE_BLASTER2,
+	TE_RAILTRAIL2,
+	TE_FLAME,
+	TE_LIGHTNING,
+	TE_DEBUGTRAIL,
+	TE_PLAIN_EXPLOSION,
+	TE_FLASHLIGHT,
+	TE_FORCEWALL,
+	TE_HEATBEAM,
+	TE_MONSTER_HEATBEAM,
+	TE_STEAM,
+	TE_BUBBLETRAIL2,
+	TE_MOREBLOOD,
+	TE_HEATBEAM_SPARKS,
+	TE_HEATBEAM_STEAM,
+	TE_CHAINFIST_SMOKE,
+	TE_ELECTRIC_SPARKS,
+	TE_TRACKER_EXPLOSION,
+	TE_TELEPORT_EFFECT,
+	TE_DBALL_GOAL,
+	TE_WIDOWBEAMOUT,
+	TE_NUKEBLAST,
+	TE_WIDOWSPLASH,
+	TE_EXPLOSION1_BIG,
+	TE_EXPLOSION1_NP,
+	TE_FLECHETTE,
+//ROGUE
+
+	TE_NUM_ENTITIES
+} temp_event_t;
+
 typedef struct {
     int     flags;
     int     index;
@@ -131,6 +194,19 @@ typedef struct {
     float   attenuation;
     float   timeofs;
 } snd_params_t;
+
+typedef struct {
+    int type;
+    vec3_t pos1;
+    vec3_t pos2;
+    vec3_t offset;
+    vec3_t dir;
+    int count;
+    int color;
+    int entity1;
+    int entity2;
+    int time;
+} tent_params_t;
 
 // pmove_state_t is the information necessary for client side movement
 // prediction
@@ -330,6 +406,8 @@ typedef struct {
 
 server_frame_t frame;
 
+
+
 void MSG_ReadData(void *out, size_t len);
 uint8_t MSG_ReadByte(void);
 uint16_t MSG_ReadShort(void);
@@ -341,6 +419,7 @@ int16_t MSG_ReadWord(void);
 uint8_t MSG_ReadAngle(void);
 uint16_t MSG_ReadAngle16(void);
 void MSG_ReadPos(vec3_t pos);
+void MSG_ReadDir(vec3_t dir);
 void MSG_ParseDeltaEntity(const entity_state_t *from,
                           entity_state_t *to,
                           int            number,
@@ -359,5 +438,7 @@ void ParseSound(void);
 void ParsePrint(void);
 void ParseCenterprint(void);
 void ParseMuzzleFlash(void);
+void ParseTempEntity(void);
+void ParseStuffText(void);
 
 #endif

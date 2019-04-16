@@ -52,6 +52,14 @@ void ProcessServerMessage(void)
 	case svc_muzzleflash:
 		ParseMuzzleFlash();
 		break;
+
+	case svc_temp_entity:
+		ParseTempEntity();
+		break;
+
+	case svc_stufftext:
+		ParseStuffText();
+		break;
 	}
 }
 

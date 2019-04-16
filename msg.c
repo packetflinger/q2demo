@@ -191,3 +191,14 @@ void MSG_ParseDeltaEntity(const entity_state_t *from,
     }
 }
 
+void MSG_ReadDir(vec3_t dir)
+{
+    int     b;
+
+    b = MSG_ReadByte();
+    //dir[0] = (vec_t *) bytedirs[0];
+    //dir[1] = (vec_t *) bytedirs[1];
+    //dir[2] = (vec_t *) bytedirs[2];
+}
+
+
