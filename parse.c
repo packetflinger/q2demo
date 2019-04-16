@@ -235,3 +235,13 @@ void ParseSound(void)
 
     printf("Sound\n");
 }
+
+void ParsePrint(void)
+{
+	static int level;
+	static char *print;
+	level = MSG_ReadByte();
+	print = MSG_ReadString();
+
+	printf("Print - %s\n", print);
+}

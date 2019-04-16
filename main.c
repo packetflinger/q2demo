@@ -39,6 +39,10 @@ void ProcessServerMessage(void)
 	case svc_sound:
 		ParseSound();
 		break;
+
+	case svc_print:
+		ParsePrint();
+		break;
 	}
 }
 
