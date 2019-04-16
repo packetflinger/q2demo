@@ -192,3 +192,46 @@ void ParsePacketEntities(void)
 
 	printf("\n");
 }
+
+void ParseSound(void)
+{
+	snd_params_t    snd;
+    int flags, channel, entity;
+
+    flags = MSG_ReadByte();
+    snd.index = MSG_ReadByte();
+
+    if (flags & SND_VOLUME)
+        snd.volume = MSG_ReadByte() / 255.0f;
+    else
+        snd.volume = DEFAULT_SOUND_PACKET_VOLUME;
+
+    if (flags & SND_ATTENUATION)
+        snd.attenuation = MSG_ReadByte() / 64.0f;
+    else
+        snd.attenuation = DEFAULT_SOUND_PACKET_ATTENUATION;
+
+    if (flags & SND_OFFSET)
+        snd.timeofs = MSG_ReadByte() / 1000.0f;
+    else
+        snd.timeofs = 0;
+
+    if (flags & SND_ENT) {
+        // entity relative
+        channel = MSG_ReadShort();
+        entity = channel >> 3;
+        snd.entity = entity;
+        snd.channel = channel & 7;
+    } else {
+        snd.entity = 0;
+        snd.channel = 0;
+    }
+
+    // positioned in space
+    if (flags & SND_POS)
+        MSG_ReadPos(snd.pos);
+
+    snd.flags = flags;
+
+    printf("Sound\n");
+}

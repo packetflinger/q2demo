@@ -35,6 +35,10 @@ void ProcessServerMessage(void)
 	case svc_packetentities:
 		ParsePacketEntities();
 		break;
+
+	case svc_sound:
+		ParseSound();
+		break;
 	}
 }
 

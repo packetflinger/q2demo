@@ -111,6 +111,27 @@ typedef enum {
 #define PS_BITS             16
 #define PS_MASK             ((1<<PS_BITS)-1)
 
+// a sound without an ent or pos will be a local only sound
+#define SND_VOLUME          (1<<0)  // a byte
+#define SND_ATTENUATION     (1<<1)  // a byte
+#define SND_POS             (1<<2)  // three coordinates
+#define SND_ENT             (1<<3)  // a short 0-2: channel, 3-12: entity
+#define SND_OFFSET          (1<<4)  // a byte, msec offset from frame start
+
+#define DEFAULT_SOUND_PACKET_VOLUME         1.0f
+#define DEFAULT_SOUND_PACKET_ATTENUATION    1.0f
+
+typedef struct {
+    int     flags;
+    int     index;
+    int     entity;
+    int     channel;
+    vec3_t  pos;
+    float   volume;
+    float   attenuation;
+    float   timeofs;
+} snd_params_t;
+
 // pmove_state_t is the information necessary for client side movement
 // prediction
 typedef enum {
@@ -334,5 +355,6 @@ void ParseBaseline(int index, int bits);
 void ParseFrame(uint32_t extrabits);
 void ParsePlayerstate(player_state_t *ps);
 void ParsePacketEntities(void);
+void ParseSound(void);
 
 #endif
