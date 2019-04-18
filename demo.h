@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <getopt.h>
 
 #define MAX_CFGSTR_CHARS    1024
 #define MAX_STRING_CHARS    2048
@@ -406,7 +407,14 @@ typedef struct {
 
 server_frame_t frame;
 
+#define OPT_VERBOSE    1
+#define OPT_PRINTS     2
+#define OPT_USAGE      4
+#define OPT_CSTRINGS   8
+#define OPT_FRAMES     16
+#define OPT_LAYOUTS    32
 
+uint32_t opt;
 
 void MSG_ReadData(void *out, size_t len);
 uint8_t MSG_ReadByte(void);
@@ -440,5 +448,8 @@ void ParseCenterprint(void);
 void ParseMuzzleFlash(void);
 void ParseTempEntity(void);
 void ParseStuffText(void);
+void ParseLayout(void);
+
+uint32_t options;
 
 #endif

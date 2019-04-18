@@ -11,7 +11,9 @@ void ParseServerData(void)
 	data.client_edict = MSG_ReadShort();
 	data.map = MSG_ReadString();
 
-	printf("ServerData (%s, %s)\n",data.gamedir, data.map);
+	if (options & OPT_VERBOSE) {
+		printf("ServerData (%s, %s)\n",data.gamedir, data.map);
+	}
 }
 
 void ParseConfigString(void)
@@ -21,7 +23,9 @@ void ParseConfigString(void)
 	cs.index = MSG_ReadShort();
 	strcpy(cs.string, MSG_ReadString());
 
-	printf("ConfigString [%d] - %s\n", cs.index, cs.string);
+	if (options & OPT_VERBOSE) {
+		printf("ConfigString [%d] - %s\n", cs.index, cs.string);
+	}
 }
 
 uint32_t ParseEntityBitmask(void)
@@ -62,7 +66,9 @@ void ParseBaseline(int index, int bits)
 
     MSG_ParseDeltaEntity(NULL, &baselines[index], index, bits, 0);
 
-    printf("Baseline [%d]\n", index);
+    if (options & OPT_VERBOSE) {
+    	printf("Baseline [%d]\n", index);
+    }
 }
 
 void ParseFrame(uint32_t extrabits)
@@ -77,7 +83,9 @@ void ParseFrame(uint32_t extrabits)
 	frame.areabytes = MSG_ReadByte();
 	MSG_ReadData(&frame.areabits, frame.areabytes);
 
-	printf("Frame [%d]\n", frame.number);
+	if ((options & OPT_VERBOSE) || (options & OPT_FRAMES)) {
+		printf("Frame [%d]\n", frame.number);
+	}
 }
 
 void ParsePlayerstate(player_state_t *ps)
@@ -167,7 +175,9 @@ void ParsePlayerstate(player_state_t *ps)
         if (statbits & (1U << i))
             ps->stats[i] = MSG_ReadShort();
 
-    printf("Playerstate\n");
+    if (options & OPT_VERBOSE) {
+    	printf("Playerstate\n");
+    }
 }
 
 void ParsePacketEntities(void)
@@ -176,7 +186,9 @@ void ParsePacketEntities(void)
 	static uint16_t num;
 	static entity_state_t nullstate;
 
-	printf("PacketEntities - ");
+	if (options & OPT_VERBOSE) {
+		printf("PacketEntities - ");
+	}
 
 	while (true) {
 		bits = ParseEntityBitmask();
@@ -187,10 +199,15 @@ void ParsePacketEntities(void)
 		}
 
 		MSG_ParseDeltaEntity(NULL, &nullstate, num, bits, 0);
-		printf("%d ", num);
+
+		if (options & OPT_VERBOSE) {
+			printf("%d ", num);
+		}
 	}
 
-	printf("\n");
+	if (options & OPT_VERBOSE) {
+		printf("\n");
+	}
 }
 
 void ParseSound(void)
@@ -233,7 +250,9 @@ void ParseSound(void)
 
     snd.flags = flags;
 
-    printf("Sound\n");
+    if (options & OPT_VERBOSE) {
+    	printf("Sound\n");
+    }
 }
 
 void ParsePrint(void)
@@ -243,7 +262,9 @@ void ParsePrint(void)
 	level = MSG_ReadByte();
 	print = MSG_ReadString();
 
-	printf("Print - %s\n", print);
+	if ((options & OPT_PRINTS) || (options & OPT_VERBOSE)) {
+		printf("Print - %s", print); // print has \n at the end
+	}
 }
 
 void ParseCenterprint(void)
@@ -251,7 +272,9 @@ void ParseCenterprint(void)
 	static char *text;
 	text = MSG_ReadString();
 
-	printf("Centerprint - %s\n", text);
+	if (options & OPT_VERBOSE) {
+		printf("Centerprint - %s\n", text);
+	}
 }
 
 void ParseMuzzleFlash(void)
@@ -262,7 +285,9 @@ void ParseMuzzleFlash(void)
 	ent = MSG_ReadShort();
 	effect = MSG_ReadByte();
 
-	printf("Muzzleflash - %d\n", effect);
+	if (options & OPT_VERBOSE) {
+		printf("Muzzleflash - %d\n", effect);
+	}
 }
 
 void ParseTempEntity(void)
@@ -383,8 +408,12 @@ void ParseTempEntity(void)
 		break;
 
 	default:
-		printf("TempEnt - unknown\n");
+		printf("TempEnt - unknown (%d)\n", te.type);
 	}
+
+    if (options & OPT_VERBOSE) {
+    	printf("Temp Entity\n");
+    }
 }
 
 void ParseStuffText(void)
@@ -392,5 +421,20 @@ void ParseStuffText(void)
 	static char *text;
 	text = MSG_ReadString();
 
-	printf("StuffText - %s\n", text);
+	if (options & OPT_VERBOSE) {
+		printf("StuffText - %s\n", text);
+	}
+}
+
+void ParseLayout(void)
+{
+	static char *layout;
+	layout = MSG_ReadString();
+	if (options & OPT_VERBOSE) {
+		printf("Layout\n");
+	}
+
+	if (options & OPT_LAYOUTS) {
+		printf("Layout %s\n", layout);
+	}
 }
