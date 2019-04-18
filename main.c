@@ -125,13 +125,11 @@ int parseArgs(uint32_t argc, char **argv) {
 			break;
 
 		case 'v':
-			options = 0;
-			options |= OPT_VERBOSE;
+			options = OPT_VERBOSE;
 			break;
 
 		case 'h':
-			options = 0;
-			options |= OPT_USAGE;
+			options = OPT_USAGE;
 			break;
 
 		case '?':

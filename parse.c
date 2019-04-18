@@ -23,7 +23,7 @@ void ParseConfigString(void)
 	cs.index = MSG_ReadShort();
 	strcpy(cs.string, MSG_ReadString());
 
-	if (options & OPT_VERBOSE) {
+	if ((options & OPT_VERBOSE) || (options & OPT_CSTRINGS)) {
 		printf("ConfigString [%d] - %s\n", cs.index, cs.string);
 	}
 }
