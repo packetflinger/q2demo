@@ -449,6 +449,7 @@ void ParseMuzzleFlash(void);
 void ParseTempEntity(void);
 void ParseStuffText(void);
 void ParseLayout(void);
+int ParseArgs(uint32_t argc, char **argv);
 
 uint32_t options;
 

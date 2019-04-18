@@ -1,5 +1,58 @@
 #include "demo.h"
 
+int ParseArgs(uint32_t argc, char **argv)
+{
+
+	uint16_t i;
+	options = 0;
+
+	while ((opt = getopt(argc, argv, "vphcfl")) != -1) {
+		switch(opt) {
+		case 'p':
+			options |= OPT_PRINTS;
+			break;
+
+		case 'c':
+			options |= OPT_CSTRINGS;
+			break;
+
+		case 'f':
+			options |= OPT_FRAMES;
+			break;
+
+		case 'l':
+			options |= OPT_LAYOUTS;
+			break;
+
+		case 'v':
+			options = OPT_VERBOSE;
+			break;
+
+		case 'h':
+			options = OPT_USAGE;
+			break;
+
+		case '?':
+			printf("unknown option: %c\n", optopt);
+			break;
+		}
+	}
+
+	if ((options & OPT_USAGE) || argc == 1) {
+		printf("Usage: %s [args] <demofilename>\n", argv[0]);
+		printf("Args:\n");
+		printf("  -c (output configstrings)\n");
+		printf("  -f (output frame number)\n");
+		printf("  -l (output layouts)\n");
+		printf("  -h (this help message)\n");
+		printf("  -p (output only server print message (chat, obituaries, etc)\n");
+		printf("  -v (output verbose parsing information - each message parsed)\n\n");
+		exit(EXIT_SUCCESS);
+	}
+
+	return optind;
+}
+
 void ParseServerData(void)
 {
 	srv_data_t data;
