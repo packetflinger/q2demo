@@ -165,3 +165,26 @@ const vec3_t bytedirs[NUMVERTEXNORMALS] = {
 	{-0.587785, -0.425325, -0.688191},
 	{-0.688191, -0.587785, -0.425325},
 };
+
+/**
+ * @brief A shorthand g_snprintf into a statically allocated buffer. Several
+ * buffers are maintained internally so that nested va()'s are safe within
+ * reasonable limits. This function is not thread safe.
+ *
+ * This version ganked from Quetoo
+ */
+char *va(const char *format, ...) {
+        static char strings[8][MAX_STRING_CHARS];
+        static uint16_t index;
+
+        char *string = strings[index++ % 8];
+
+        va_list args;
+
+        va_start(args, format);
+        vsnprintf(string, MAX_STRING_CHARS, format, args);
+        va_end(args);
+
+        return string;
+}
+

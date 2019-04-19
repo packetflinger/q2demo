@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <getopt.h>
+#include <stdarg.h>
 
 #define MAX_CFGSTR_CHARS    1024
 #define MAX_STRING_CHARS    2048
@@ -32,6 +33,7 @@ typedef struct {
 
 msg_buffer_t msg;
 
+char buffer[0xffff];
 
 typedef enum {
     MSG_PS_IGNORE_GUNINDEX      = (1 << 0),
@@ -450,6 +452,7 @@ void ParseTempEntity(void);
 void ParseStuffText(void);
 void ParseLayout(void);
 int ParseArgs(uint32_t argc, char **argv);
+char *va(const char *format, ...);
 
 uint32_t options;
 

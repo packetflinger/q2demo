@@ -67,35 +67,46 @@ void ProcessServerMessage(void)
 	}
 }
 
+/**
+ * Loop through the whole demo file
+ */
 void ParseDemo(const char *filename)
 {
 	FILE *fp;
-	size_t bytesread;
 
 	fp = fopen(filename, "rb");
 	if (!fp) {
 		return;
 	}
 
-	memset(&msg, 0, sizeof(msg_buffer_t));
-
+	// loop through each chunk of server messages (typically one per server frame)
 	while (1) {
-		bytesread = fread(msg.data, MSGLEN, 1, fp);
+		memset(&msg, 0, sizeof(msg_buffer_t));
+		memset(&buffer, 0, sizeof(buffer));
+
+		// Read how long the next chunk is
+		fread(msg.data, MSGLEN, 1, fp);
 		msg.index = 0;
 		msg.length = MSG_ReadLong();
 
+		// EOF
 		if (msg.length == -1) {
 			break;
 		}
 
+		// read in all the msgs in that chunk
 		fread(msg.data, msg.length, 1, fp);
 		msg.index = 0;
 
+		// loop through each individual message
 		while (msg.index < msg.length) {
 			ProcessServerMessage();
 		}
 
-		memset(&msg, 0, sizeof(msg_buffer_t));
+		// if we added to the buffer, output it
+		if (buffer[0] != 0) {
+			printf(buffer);
+		}
 	}
 
 	fclose(fp);

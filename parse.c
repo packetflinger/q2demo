@@ -53,6 +53,9 @@ int ParseArgs(uint32_t argc, char **argv)
 	return optind;
 }
 
+/**
+ * First message, only seen once per demo
+ */
 void ParseServerData(void)
 {
 	srv_data_t data;
@@ -65,10 +68,13 @@ void ParseServerData(void)
 	data.map = MSG_ReadString();
 
 	if (options & OPT_VERBOSE) {
-		printf("ServerData (%s, %s)\n",data.gamedir, data.map);
+		strcat(buffer, "ServerData\n");
 	}
 }
 
+/**
+ * Strings (typically) sent to all clients
+ */
 void ParseConfigString(void)
 {
 	srv_configstring_t cs;
@@ -77,7 +83,7 @@ void ParseConfigString(void)
 	strcpy(cs.string, MSG_ReadString());
 
 	if ((options & OPT_VERBOSE) || (options & OPT_CSTRINGS)) {
-		printf("ConfigString [%d] - %s\n", cs.index, cs.string);
+		strcat(buffer, va("ConfigString [%d] - %s\n", cs.index, cs.string));
 	}
 }
 
@@ -120,7 +126,7 @@ void ParseBaseline(int index, int bits)
     MSG_ParseDeltaEntity(NULL, &baselines[index], index, bits, 0);
 
     if (options & OPT_VERBOSE) {
-    	printf("Baseline [%d]\n", index);
+    	strcat(buffer, va("Baseline [%d]\n", index));
     }
 }
 
@@ -137,7 +143,7 @@ void ParseFrame(uint32_t extrabits)
 	MSG_ReadData(&frame.areabits, frame.areabytes);
 
 	if ((options & OPT_VERBOSE) || (options & OPT_FRAMES)) {
-		printf("Frame [%d]\n", frame.number);
+		strcat(buffer, va("Frame [%d]\n", frame.number));
 	}
 }
 
@@ -229,7 +235,7 @@ void ParsePlayerstate(player_state_t *ps)
             ps->stats[i] = MSG_ReadShort();
 
     if (options & OPT_VERBOSE) {
-    	printf("Playerstate\n");
+    	strcat(buffer, "PlayerState\n");
     }
 }
 
@@ -240,7 +246,7 @@ void ParsePacketEntities(void)
 	static entity_state_t nullstate;
 
 	if (options & OPT_VERBOSE) {
-		printf("PacketEntities - ");
+		strcat(buffer, "PacketEntities - ");
 	}
 
 	while (true) {
@@ -254,12 +260,12 @@ void ParsePacketEntities(void)
 		MSG_ParseDeltaEntity(NULL, &nullstate, num, bits, 0);
 
 		if (options & OPT_VERBOSE) {
-			printf("%d ", num);
+			strcat(buffer, va("%d ", num));
 		}
 	}
 
 	if (options & OPT_VERBOSE) {
-		printf("\n");
+		strcat(buffer, "\n");
 	}
 }
 
@@ -304,7 +310,7 @@ void ParseSound(void)
     snd.flags = flags;
 
     if (options & OPT_VERBOSE) {
-    	printf("Sound\n");
+    	strcat(buffer, "Sound\n");
     }
 }
 
@@ -316,7 +322,7 @@ void ParsePrint(void)
 	print = MSG_ReadString();
 
 	if ((options & OPT_PRINTS) || (options & OPT_VERBOSE)) {
-		printf("Print - %s", print); // print has \n at the end
+		strcat(buffer, va("Print - %s", print)); // include \n
 	}
 }
 
@@ -326,7 +332,7 @@ void ParseCenterprint(void)
 	text = MSG_ReadString();
 
 	if (options & OPT_VERBOSE) {
-		printf("Centerprint - %s\n", text);
+		strcat(buffer, va("Centerprint - %s", text)); // include \n
 	}
 }
 
@@ -339,7 +345,7 @@ void ParseMuzzleFlash(void)
 	effect = MSG_ReadByte();
 
 	if (options & OPT_VERBOSE) {
-		printf("Muzzleflash - %d\n", effect);
+		strcat(buffer, va("Muzzleflash - %d\n", effect));
 	}
 }
 
@@ -465,7 +471,7 @@ void ParseTempEntity(void)
 	}
 
     if (options & OPT_VERBOSE) {
-    	printf("Temp Entity\n");
+    	strcat(buffer, va("Temporary Entity - %d\n", te.type));
     }
 }
 
@@ -475,7 +481,7 @@ void ParseStuffText(void)
 	text = MSG_ReadString();
 
 	if (options & OPT_VERBOSE) {
-		printf("StuffText - %s\n", text);
+		strcat(buffer, va("StuffText - %s", text)); // included \n
 	}
 }
 
@@ -484,10 +490,10 @@ void ParseLayout(void)
 	static char *layout;
 	layout = MSG_ReadString();
 	if (options & OPT_VERBOSE) {
-		printf("Layout\n");
+		strcat(buffer, "Layout\n");
 	}
 
 	if (options & OPT_LAYOUTS) {
-		printf("Layout %s\n", layout);
+		strcat(buffer, ("Layout - %s\n", layout));
 	}
 }
