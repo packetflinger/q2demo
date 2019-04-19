@@ -476,7 +476,7 @@ void ParseTempEntity(void)
 	}
 
     if (options & OPT_VERBOSE) {
-    	strcat(buffer, va("Temporary Entity - %d\n", te.type));
+    	strcat(buffer, va("Temporary Entity - (%d) %s\n", te.type, Flash_Name(te.type)));
     }
 }
 

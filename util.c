@@ -1,7 +1,5 @@
 #include "demo.h"
 
-
-
 const char *MZ_Name(uint32_t idx) {
 	switch (idx) {
 	case MZ_BLASTER:
@@ -60,6 +58,125 @@ const char *MZ_Name(uint32_t idx) {
 		return "nuke[4]";
 	case MZ_NUKE8:
 		return "nuke[8]";
+	default:
+		return "unknown";
+	}
+}
+
+const char *Flash_Name(temp_event_t idx) {
+	switch (idx) {
+	case TE_GUNSHOT:
+		return "gunshot";
+	case TE_BLOOD:
+		return "blood";
+	case TE_BLASTER:
+		return "blaster";
+	case TE_RAILTRAIL:
+		return "rail trail";
+	case TE_SHOTGUN:
+		return "shotgun";
+	case TE_EXPLOSION1:
+		return "explosion[1]";
+	case TE_EXPLOSION2:
+		return "explosion[2]";
+	case TE_ROCKET_EXPLOSION:
+		return "rocket explosion";
+	case TE_GRENADE_EXPLOSION:
+		return "grenade explosion";
+	case TE_SPARKS:
+		return "sparks";
+	case TE_SPLASH:
+		return "splash";
+	case TE_BUBBLETRAIL:
+		return "bubble trail";
+	case TE_SCREEN_SPARKS:
+		return "screen sparks";
+	case TE_SHIELD_SPARKS:
+		return "shield sparks";
+	case TE_BULLET_SPARKS:
+		return "bullet sparks";
+	case TE_LASER_SPARKS:
+		return "laser sparks";
+	case TE_PARASITE_ATTACK:
+		return "parasite attack";
+	case TE_ROCKET_EXPLOSION_WATER:
+		return "underwater rocket explosion";
+	case TE_GRENADE_EXPLOSION_WATER:
+		return "underwater grenade explosion";
+	case TE_MEDIC_CABLE_ATTACK:
+		return "medic cable attack";
+	case TE_BFG_EXPLOSION:
+		return "bfg explosion";
+	case TE_BFG_BIGEXPLOSION:
+		return "bfg big explosion";
+	case TE_BOSSTPORT:
+		return "boss teleport";
+	case TE_BFG_LASER:
+		return "bfg laser";
+	case TE_GRAPPLE_CABLE:
+		return "grapple cable";
+	case TE_WELDING_SPARKS:
+		return "welding sparks";
+	case TE_GREENBLOOD:
+		return "green blood";
+	case TE_BLUEHYPERBLASTER:
+		return "blue hyperblaster";
+	case TE_PLASMA_EXPLOSION:
+		return "plasma explosion";
+	case TE_TUNNEL_SPARKS:
+		return "tunnel sparks";
+	case TE_BLASTER2:
+		return "blaster 2";
+	case TE_RAILTRAIL2:
+		return "rail trail 2";
+	case TE_FLAME:
+		return "flame";
+	case TE_LIGHTNING:
+		return "lightning";
+	case TE_DEBUGTRAIL:
+		return "debug trail";
+	case TE_PLAIN_EXPLOSION:
+		return "plain explosion";
+	case TE_FLASHLIGHT:
+		return "flashlight";
+	case TE_FORCEWALL:
+		return "force wall";
+	case TE_HEATBEAM:
+		return "heat beam";
+	case TE_MONSTER_HEATBEAM:
+		return "monster heat beam";
+	case TE_STEAM:
+		return "steam";
+	case TE_BUBBLETRAIL2:
+		return "bubble trail 2";
+	case TE_MOREBLOOD:
+		return "more blood";
+	case TE_HEATBEAM_SPARKS:
+		return "heat beam sparks";
+	case TE_HEATBEAM_STEAM:
+		return "heat beam steam";
+	case TE_CHAINFIST_SMOKE:
+		return "chainfist smoke";
+	case TE_ELECTRIC_SPARKS:
+		return "electric sparks";
+	case TE_TRACKER_EXPLOSION:
+		return "tracker explosion";
+	case TE_TELEPORT_EFFECT:
+		return "teleport effect";
+	case TE_DBALL_GOAL:
+		return "dodgeball goal";
+	case TE_WIDOWBEAMOUT:
+		return "widowbeam";
+	case TE_NUKEBLAST:
+		return "nuke blast";
+	case TE_WIDOWSPLASH:
+		return "widow splash";
+	case TE_EXPLOSION1_BIG:
+		return "big explosion 1";
+	case TE_EXPLOSION1_NP:
+		return "np explosion 1";
+	case TE_FLECHETTE:
+		return "flechette";
 	default:
 		return "unknown";
 	}

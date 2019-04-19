@@ -457,7 +457,6 @@ uint32_t opt;
 #define MZ_NUKE8            39
 //ROGUE
 
-
 void MSG_ReadData(void *out, size_t len);
 uint8_t MSG_ReadByte(void);
 uint16_t MSG_ReadShort(void);
@@ -494,6 +493,7 @@ void ParseLayout(void);
 int ParseArgs(uint32_t argc, char **argv);
 char *va(const char *format, ...);
 const char *MZ_Name(uint32_t idx);
+const char *Flash_Name(temp_event_t idx);
 
 uint32_t options;
 
