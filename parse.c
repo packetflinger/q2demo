@@ -6,7 +6,7 @@ int ParseArgs(uint32_t argc, char **argv)
 	uint16_t i;
 	options = 0;
 
-	while ((opt = getopt(argc, argv, "vphcfl")) != -1) {
+	while ((opt = getopt(argc, argv, "vphcflj")) != -1) {
 		switch(opt) {
 		case 'p':
 			options |= OPT_PRINTS;
@@ -22,6 +22,10 @@ int ParseArgs(uint32_t argc, char **argv)
 
 		case 'l':
 			options |= OPT_LAYOUTS;
+			break;
+
+		case 'j':
+			options |= OPT_JSON;
 			break;
 
 		case 'v':
@@ -45,6 +49,7 @@ int ParseArgs(uint32_t argc, char **argv)
 		printf("  -f (output frame number)\n");
 		printf("  -l (output layouts)\n");
 		printf("  -h (this help message)\n");
+		printf("  -j (output in JSON format\n");
 		printf("  -p (output only server print message (chat, obituaries, etc)\n");
 		printf("  -v (output verbose parsing information - each message parsed)\n\n");
 		exit(EXIT_SUCCESS);
@@ -345,7 +350,7 @@ void ParseMuzzleFlash(void)
 	effect = MSG_ReadByte();
 
 	if (options & OPT_VERBOSE) {
-		strcat(buffer, va("Muzzleflash - %d\n", effect));
+		strcat(buffer, va("Muzzleflash - (%d) %s\n", effect, MZ_Name(effect)));
 	}
 }
 

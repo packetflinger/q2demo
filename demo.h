@@ -415,8 +415,48 @@ server_frame_t frame;
 #define OPT_CSTRINGS   8
 #define OPT_FRAMES     16
 #define OPT_LAYOUTS    32
+#define OPT_JSON       64
 
 uint32_t opt;
+
+//
+// muzzle flashes / player effects
+//
+#define MZ_BLASTER          0
+#define MZ_MACHINEGUN       1
+#define MZ_SHOTGUN          2
+#define MZ_CHAINGUN1        3
+#define MZ_CHAINGUN2        4
+#define MZ_CHAINGUN3        5
+#define MZ_RAILGUN          6
+#define MZ_ROCKET           7
+#define MZ_GRENADE          8
+#define MZ_LOGIN            9
+#define MZ_LOGOUT           10
+#define MZ_RESPAWN          11
+#define MZ_BFG              12
+#define MZ_SSHOTGUN         13
+#define MZ_HYPERBLASTER     14
+#define MZ_ITEMRESPAWN      15
+// RAFAEL
+#define MZ_IONRIPPER        16
+#define MZ_BLUEHYPERBLASTER 17
+#define MZ_PHALANX          18
+#define MZ_SILENCED         128     // bit flag ORed with one of the above numbers
+
+//ROGUE
+#define MZ_ETF_RIFLE        30
+#define MZ_UNUSED           31
+#define MZ_SHOTGUN2         32
+#define MZ_HEATBEAM         33
+#define MZ_BLASTER2         34
+#define MZ_TRACKER          35
+#define MZ_NUKE1            36
+#define MZ_NUKE2            37
+#define MZ_NUKE4            38
+#define MZ_NUKE8            39
+//ROGUE
+
 
 void MSG_ReadData(void *out, size_t len);
 uint8_t MSG_ReadByte(void);
@@ -453,6 +493,7 @@ void ParseStuffText(void);
 void ParseLayout(void);
 int ParseArgs(uint32_t argc, char **argv);
 char *va(const char *format, ...);
+const char *MZ_Name(uint32_t idx);
 
 uint32_t options;
 

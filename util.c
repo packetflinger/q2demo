@@ -1,5 +1,70 @@
 #include "demo.h"
 
+
+
+const char *MZ_Name(uint32_t idx) {
+	switch (idx) {
+	case MZ_BLASTER:
+		return "blaster";
+	case MZ_MACHINEGUN:
+		return "machinegun";
+	case MZ_SHOTGUN:
+		return "shotgun";
+	case MZ_CHAINGUN1:
+		return "chaingun[1]";
+	case MZ_CHAINGUN2:
+		return "chaingun[2]";
+	case MZ_CHAINGUN3:
+		return "chaingun[3]";
+	case MZ_RAILGUN:
+		return "railgun";
+	case MZ_ROCKET:
+		return "rocket";
+	case MZ_GRENADE:
+		return "grenade";
+	case MZ_LOGIN:
+		return "spawn";
+	case MZ_LOGOUT:
+		return "despawn";
+	case MZ_RESPAWN:
+		return "player respawn";
+	case MZ_BFG:
+		return "bfg";
+	case MZ_SSHOTGUN:
+		return "super shotgun";
+	case MZ_HYPERBLASTER:
+		return "hyperblaster";
+	case MZ_ITEMRESPAWN:
+		return "item respawn";
+	case MZ_IONRIPPER:
+		return "ion ripper";
+	case MZ_BLUEHYPERBLASTER:
+		return "blue hyperblaster";
+	case MZ_PHALANX:
+		return "phalanx";
+	case MZ_ETF_RIFLE:
+		return "etf rifle";
+	case MZ_SHOTGUN2:
+		return "shotgun2";
+	case MZ_HEATBEAM:
+		return "heatbeam";
+	case MZ_BLASTER2:
+		return "blaster2";
+	case MZ_TRACKER:
+		return "tracker";
+	case MZ_NUKE1:
+		return "nuke[1]";
+	case MZ_NUKE2:
+		return "nuke[2]";
+	case MZ_NUKE4:
+		return "nuke[4]";
+	case MZ_NUKE8:
+		return "nuke[8]";
+	default:
+		return "unknown";
+	}
+}
+
 #define NUMVERTEXNORMALS    162
 const vec3_t bytedirs[NUMVERTEXNORMALS] = {
     {-0.525731, 0.000000, 0.850651},
