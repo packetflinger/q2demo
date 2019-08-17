@@ -54,7 +54,7 @@ char *MSG_ReadString(void)
 
 	memset(&str, 0, MAX_STRING_CHARS);
 
-	for (i=0; i<len; i++) {
+	for (i=0; i<=len; i++) {
 		character = MSG_ReadByte() & 0x7f;
 		strcat(str,  &character);
 	}

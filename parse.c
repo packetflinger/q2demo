@@ -24,12 +24,12 @@ int ParseArgs(uint32_t argc, char **argv)
 			options |= OPT_LAYOUTS;
 			break;
 
-		case 'j':
-			options |= OPT_JSON;
-			break;
-
 		case 'v':
 			options = OPT_VERBOSE;
+			break;
+
+		case 'j':
+			options |= OPT_JSON | OPT_VERBOSE;
 			break;
 
 		case 'h':
@@ -63,8 +63,6 @@ int ParseArgs(uint32_t argc, char **argv)
  */
 void ParseServerData(void)
 {
-	srv_data_t data;
-
 	data.version = MSG_ReadLong();
 	data.count = MSG_ReadLong();
 	data.demo = MSG_ReadByte();
@@ -72,7 +70,9 @@ void ParseServerData(void)
 	data.client_edict = MSG_ReadShort();
 	data.map = MSG_ReadString();
 
-	if (options & OPT_VERBOSE) {
+	if (options & OPT_JSON) {
+		strcat(buffer, va("\"serverdata\": { \"protocol_version\": %d, \"game\": \"%s\", \"client_edict\": %d, \"map\": \"%s\" } ", data.version, data.gamedir, data.client_edict, data.map));
+	} else if (options & OPT_VERBOSE) {
 		strcat(buffer, "ServerData\n");
 	}
 }
@@ -87,7 +87,9 @@ void ParseConfigString(void)
 	cs.index = MSG_ReadShort();
 	strcpy(cs.string, MSG_ReadString());
 
-	if ((options & OPT_VERBOSE) || (options & OPT_CSTRINGS)) {
+	if ((options & OPT_JSON)) {
+		strcat(buffer, va("\"config\""));
+	} else if ((options & OPT_VERBOSE) || (options & OPT_CSTRINGS)) {
 		strcat(buffer, va("ConfigString [%d] - %s\n", cs.index, cs.string));
 	}
 }

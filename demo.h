@@ -10,6 +10,10 @@
 #include <getopt.h>
 #include <stdarg.h>
 
+#define MVD_MAGIC 			(((unsigned)('2')<<24)|(('D')<<16)|(('V')<<8)|('M'))
+
+#define MAX_CLIENTS         256
+#define MAX_CONFIGSTRINGS   2080
 #define MAX_CFGSTR_CHARS    1024
 #define MAX_STRING_CHARS    2048
 #define MSGLEN              4
@@ -19,6 +23,9 @@
 #define MAX_MAP_AREA_BYTES  (MAX_MAP_AREAS / 8)
 #define SVCMD_BITS          5
 #define SVCMD_MASK          ((1 << SVCMD_BITS) - 1)
+#define CLIENTNUM_NONE      (MAX_CLIENTS - 1)
+
+#define OPENTDM_TIME		1572
 
 typedef unsigned char 	byte;
 
@@ -28,7 +35,7 @@ typedef vec_t vec3_t[3];
 typedef struct {
 	size_t         length;
 	uint32_t       index;
-	byte           data[0x0fff];
+	byte           data[0xffff];
 } msg_buffer_t;
 
 msg_buffer_t msg;
@@ -261,6 +268,39 @@ typedef enum {
     svc_num_types
 } svc_ops_t;
 
+typedef enum {
+    mvd_bad,
+    mvd_nop,
+    mvd_disconnect,     // reserved
+    mvd_reconnect,      // reserved
+    mvd_serverdata,
+    mvd_configstring,
+    mvd_frame,
+    mvd_frame_nodelta,  // reserved
+    mvd_unicast,
+    mvd_unicast_r,
+
+    // must match multicast_t order!!!
+    mvd_multicast_all,
+    mvd_multicast_phs,
+    mvd_multicast_pvs,
+    mvd_multicast_all_r,
+    mvd_multicast_phs_r,
+    mvd_multicast_pvs_r,
+
+    mvd_sound,
+    mvd_print,
+    mvd_stufftext,      // reserved
+
+    mvd_num_types
+} mvd_ops_t;
+
+typedef enum {
+    MVF_NOMSGS      = 1,
+    MVF_SINGLEPOV   = 2,
+    MVF_RESERVED2   = 4
+} mvd_flags_t;
+
 typedef struct {
 	uint32_t    version;
 	uint32_t    count;
@@ -269,6 +309,8 @@ typedef struct {
 	byte        client_edict;
 	char        *map;
 } srv_data_t;
+
+srv_data_t data;
 
 typedef struct {
 	uint16_t    index;
@@ -496,5 +538,7 @@ const char *MZ_Name(uint32_t idx);
 const char *Flash_Name(temp_event_t idx);
 
 uint32_t options;
+
+void MVD_ParseServerData(uint32_t extrabits);
 
 #endif
