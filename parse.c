@@ -43,7 +43,7 @@ int ParseArgs(uint32_t argc, char **argv)
 	}
 
 	if ((options & OPT_USAGE) || argc == 1) {
-		printf("Usage: %s [args] <demofilename>\n", argv[0]);
+		printf("Usage: %s [args] <demofilename> [demofilename...]\n", argv[0]);
 		printf("Args:\n");
 		printf("  -c (output configstrings)\n");
 		printf("  -f (output frame number)\n");
