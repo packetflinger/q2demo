@@ -27,10 +27,11 @@
 
 #define OPENTDM_TIME		1572
 
-typedef unsigned char 	byte;
+typedef unsigned char       byte;
 
-typedef float vec_t;
-typedef vec_t vec3_t[3];
+typedef float               vec_t;
+typedef vec_t               vec3_t[3];
+
 
 typedef struct {
 	size_t         length;
@@ -306,7 +307,7 @@ typedef struct {
 	uint32_t    count;
 	byte        demo;
 	char        *gamedir;
-	byte        client_edict;
+	uint16_t    client_edict;
 	char        *map;
 } srv_data_t;
 
@@ -433,23 +434,84 @@ typedef struct {
     short       stats[MAX_STATS];       // fast status bar updates
 } player_state_t;
 
+
+/**
+ * Represents a SVC_FRAME server message
+ *
+ * Frames are sent over as "delta-compressed", meaning
+ * the current frame was compared to a previous frame (almost
+ * always the one immediately preceding this one) and
+ * only the differences (or delta) is sent.
+ *
+ * This saves bandwidth and drastically reduces load by
+ * not requiring the crunching of edicts that didn't change.
+ *
+ * A frame consists of at least 3 messages in this order:
+ *  1. SVC_FRAME           (number, what we delta'd against)
+ *  2. SVC_PLAYERINFO      (move, gun, hud stats, etc)
+ *  3. SVC_PACKETENTITIES  (edict updates)
+ *
+ * Additional messages can be sent as well (prints, temp_entities,
+ * sounds, flashes, etc), but are not required for each frame.
+ */
 typedef struct {
-    bool            valid;
+	// is this frame valid or not?
+    bool   valid;
 
-    int             number;
-    int             delta;
+    // the current frame number
+    int    number;
 
-    byte            areabits[MAX_MAP_AREA_BYTES];
-    int             areabytes;
+    // the frame this one is compressed against. Almost always previous frame
+    int    delta;
 
+    // I have no idea wtf areabits are for
+    byte   areabits[MAX_MAP_AREA_BYTES];
+
+    // the number of area bits
+    int    areabytes;
+
+    // not sure i need this
+    int    clientNum;
+
+    // the number of entities sent this frame (SVC_PACKETENTITIES)
+    int    numEntities;
+
+    // maybe remove
+    int    firstEntity;
+
+    // the SVC_PLAYERINFO sent over with this frame
     player_state_t  ps;
-    int             clientNum;
 
-    int             numEntities;
-    int             firstEntity;
+    // the entire entity blob at this point in time
+    // edicts sent over using SVC_PACKETENTITIES this frame
+    // are decompressed into this
+    entity_state_t  *entities;
 } server_frame_t;
 
 server_frame_t frame;
+
+
+/**
+ * The entire demo is parsed (decompressed) into this structure. From there
+ * it can be modified as required and re-commpressed back into a .dm2 file
+ */
+struct demo_s {
+	// first message
+	srv_data_t            serverdata;
+
+	// strings
+	srv_configstring_t    configstrings[MAX_CONFIGSTRINGS]; // initial
+
+	// initial entity states (positions, orientations, etc)
+	entity_state_t        baselines[MAX_EDICTS];
+
+	// one of these for each 0.1 second
+	server_frame_t        frames[0xffff];
+
+	// the number of frames we have
+	uint32_t              frame_count;
+};
+
 
 #define OPT_VERBOSE    1
 #define OPT_PRINTS     2
@@ -540,5 +602,7 @@ const char *Flash_Name(temp_event_t idx);
 uint32_t options;
 
 void MVD_ParseServerData(uint32_t extrabits);
+
+struct demo_s demo;
 
 #endif

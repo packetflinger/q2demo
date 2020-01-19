@@ -63,15 +63,17 @@ int ParseArgs(uint32_t argc, char **argv)
  */
 void ParseServerData(void)
 {
-	data.version = MSG_ReadLong();
-	data.count = MSG_ReadLong();
-	data.demo = MSG_ReadByte();
-	data.gamedir = MSG_ReadString();
-	data.client_edict = MSG_ReadShort();
-	data.map = MSG_ReadString();
+	srv_data_t *srv = &demo.serverdata;
+
+	srv->version = MSG_ReadLong();
+	srv->count = MSG_ReadLong();
+	srv->demo = MSG_ReadByte();
+	srv->gamedir = MSG_ReadString();
+	srv->client_edict = MSG_ReadShort();
+	srv->map = MSG_ReadString();
 
 	if (options & OPT_JSON) {
-		strcat(buffer, va("\"serverdata\": { \"protocol_version\": %d, \"game\": \"%s\", \"client_edict\": %d, \"map\": \"%s\" } ", data.version, data.gamedir, data.client_edict, data.map));
+		//strcat(buffer, va("\"serverdata\": { \"protocol_version\": %d, \"game\": \"%s\", \"client_edict\": %d, \"map\": \"%s\" } ", data.version, data.gamedir, data.client_edict, data.map));
 	} else if (options & OPT_VERBOSE) {
 		strcat(buffer, "ServerData\n");
 	}
