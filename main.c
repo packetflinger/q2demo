@@ -30,7 +30,7 @@ void ProcessServerMessage(void)
 		break;
 
 	case svc_playerinfo:
-		ParsePlayerstate(&frame.ps);
+		ParsePlayerstate(&demo.frames[demo.frame_current].ps);
 		break;
 
 	case svc_packetentities:
@@ -111,6 +111,9 @@ void ParseDemo(const char *filename)
 	}
 
 	fclose(fp);
+
+
+	WriteDemoFile(va("%s-1", filename));
 }
 
 uint32_t main(uint32_t argc, char **argv)

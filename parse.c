@@ -63,7 +63,7 @@ int ParseArgs(uint32_t argc, char **argv)
  */
 void ParseServerData(void)
 {
-	srv_data_t *srv = &demo.serverdata;
+	serverdata_t *srv = &demo.serverdata;
 
 	srv->version = MSG_ReadLong();
 	srv->count = MSG_ReadLong();
@@ -84,17 +84,44 @@ void ParseServerData(void)
  */
 void ParseConfigString(void)
 {
-	srv_configstring_t cs;
+	struct configstring_s *new_cs, *cs;
+	serverframe_t *fr;
 
-	cs.index = MSG_ReadShort();
-	strcpy(cs.string, MSG_ReadString());
+	uint16_t index;
+	char *str;
+
+	index = MSG_ReadShort();
+	str = MSG_ReadString();
+
+	// it's an initial cs
+	if (!demo.frame_count) {
+		new_cs = &demo.configstrings[index];
+		new_cs->index = index;
+		strncpy(new_cs->string, str, sizeof(new_cs->string));
+		return;
+	}
+
+	fr = &demo.frames[demo.frame_current];
+	new_cs = malloc(sizeof(struct configstring_s));
+
+	cs = fr->cs;
+
+	// find the last cs
+	while (cs) {
+		cs = cs->next;
+	}
+
+	cs = new_cs;
+	cs->index = index;
+	strncpy(cs->string, str, sizeof(cs->string));
 
 	if ((options & OPT_JSON)) {
 		strcat(buffer, va("\"config\""));
 	} else if ((options & OPT_VERBOSE) || (options & OPT_CSTRINGS)) {
-		strcat(buffer, va("ConfigString [%d] - %s\n", cs.index, cs.string));
+		strcat(buffer, va("ConfigString [%d] - %s\n", index, str));
 	}
 }
+
 
 uint32_t ParseEntityBitmask(void)
 {
@@ -132,7 +159,7 @@ void ParseBaseline(int index, int bits)
         printf("Err: Baseline index out of range\n");
     }
 
-    MSG_ParseDeltaEntity(NULL, &baselines[index], index, bits, 0);
+    MSG_ParseDeltaEntity(NULL, &demo.baselines[index], index, bits, 0);
 
     if (options & OPT_VERBOSE) {
     	strcat(buffer, va("Baseline [%d]\n", index));
@@ -141,18 +168,26 @@ void ParseBaseline(int index, int bits)
 
 void ParseFrame(uint32_t extrabits)
 {
+	uint32_t framenum, deltanum, areabytes;
+	serverframe_t *fr;
+
 	int suppressed, length;
 
-	memset(&frame, 0, sizeof(server_frame_t));
-
-	frame.number = MSG_ReadLong();
-	frame.delta = MSG_ReadLong();
+	framenum = MSG_ReadLong();
+	deltanum = MSG_ReadLong();
 	suppressed = MSG_ReadByte();
-	frame.areabytes = MSG_ReadByte();
-	MSG_ReadData(&frame.areabits, frame.areabytes);
+	areabytes = MSG_ReadByte();
+
+	fr = &demo.frames[framenum];
+
+	memset(fr, 0, sizeof(serverframe_t));
+	fr->number = framenum;
+	fr->delta = deltanum;
+	fr->suppressed = suppressed;
+	MSG_ReadData(&fr->areabits, areabytes);
 
 	if ((options & OPT_VERBOSE) || (options & OPT_FRAMES)) {
-		strcat(buffer, va("Frame [%d]\n", frame.number));
+		strcat(buffer, va("Frame [%d]\n", framenum));
 	}
 }
 

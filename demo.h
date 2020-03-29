@@ -10,6 +10,11 @@
 #include <getopt.h>
 #include <stdarg.h>
 
+#ifndef _M_AMD64
+#define Q_stricmp _strcmpi	//odd, amd64 libc is missing this...
+#define Q_strncasecmp _strnicmp
+#endif
+
 #define MVD_MAGIC 			(((unsigned)('2')<<24)|(('D')<<16)|(('V')<<8)|('M'))
 
 #define MAX_CLIENTS         256
@@ -309,14 +314,15 @@ typedef struct {
 	char        *gamedir;
 	uint16_t    client_edict;
 	char        *map;
-} srv_data_t;
+} serverdata_t;
 
-srv_data_t data;
-
-typedef struct {
+struct configstring_s {
 	uint16_t    index;
 	char        string[MAX_CFGSTR_CHARS];
-} srv_configstring_t;
+	struct configstring_s *next;
+};
+
+typedef struct configstring_s configstring_t;
 
 // entity_state_t is the information conveyed from the server
 // in an update message about entities that the client will
@@ -456,28 +462,31 @@ typedef struct {
  */
 typedef struct {
 	// is this frame valid or not?
-    bool   valid;
+    bool            valid;
 
     // the current frame number
-    int    number;
+    uint32_t        number;
 
     // the frame this one is compressed against. Almost always previous frame
-    int    delta;
+    uint32_t        delta;
 
     // I have no idea wtf areabits are for
-    byte   areabits[MAX_MAP_AREA_BYTES];
+    byte            areabits[MAX_MAP_AREA_BYTES];
 
     // the number of area bits
-    int    areabytes;
+    uint32_t        areabytes;
+
+    //
+    uint32_t        suppressed;
 
     // not sure i need this
-    int    clientNum;
+    uint8_t         clientNum;
 
     // the number of entities sent this frame (SVC_PACKETENTITIES)
-    int    numEntities;
+    uint16_t        numEntities;
 
     // maybe remove
-    int    firstEntity;
+    uint16_t        firstEntity;
 
     // the SVC_PLAYERINFO sent over with this frame
     player_state_t  ps;
@@ -486,9 +495,10 @@ typedef struct {
     // edicts sent over using SVC_PACKETENTITIES this frame
     // are decompressed into this
     entity_state_t  *entities;
-} server_frame_t;
 
-server_frame_t frame;
+    struct configstring_s *cs;
+} serverframe_t;
+
 
 
 /**
@@ -497,22 +507,33 @@ server_frame_t frame;
  */
 struct demo_s {
 	// first message
-	srv_data_t            serverdata;
+	serverdata_t     serverdata;
 
-	// strings
-	srv_configstring_t    configstrings[MAX_CONFIGSTRINGS]; // initial
+	// initial strings sent when connecting
+	configstring_t   configstrings[MAX_CONFIGSTRINGS]; // initial
+
+	// cumulatively merged strings at a certain point in time
+	configstring_t   configstrings_merged[MAX_CONFIGSTRINGS];
 
 	// initial entity states (positions, orientations, etc)
-	entity_state_t        baselines[MAX_EDICTS];
+	entity_state_t   baselines[MAX_EDICTS];
+
+	// cumulatively merged edicts at a certain point in time
+	entity_state_t   ents_merged[MAX_EDICTS];
 
 	// one of these for each 0.1 second
-	server_frame_t        frames[0xffff];
+	serverframe_t    frames[0xffff];
 
 	// the number of frames we have
-	uint32_t              frame_count;
+	uint32_t         frame_count;
+
+	// the current frame number;
+	uint32_t         frame_current;
 };
 
-
+/**
+ * Command line arguments options
+ */
 #define OPT_VERBOSE    1
 #define OPT_PRINTS     2
 #define OPT_USAGE      4
@@ -521,7 +542,6 @@ struct demo_s {
 #define OPT_LAYOUTS    32
 #define OPT_JSON       64
 
-uint32_t opt;
 
 //
 // muzzle flashes / player effects
@@ -561,48 +581,74 @@ uint32_t opt;
 #define MZ_NUKE8            39
 //ROGUE
 
-void MSG_ReadData(void *out, size_t len);
-uint8_t MSG_ReadByte(void);
-uint16_t MSG_ReadShort(void);
-int8_t MSG_ReadChar(void);
-int32_t MSG_ReadLong(void);
-char *MSG_ReadString(void);
-uint16_t MSG_ReadCoord(void);
-int16_t MSG_ReadWord(void);
-uint8_t MSG_ReadAngle(void);
-uint16_t MSG_ReadAngle16(void);
-void MSG_ReadPos(vec3_t pos);
-void MSG_ReadDir(vec3_t dir);
-void MSG_ParseDeltaEntity(const entity_state_t *from,
+// message stuff
+void       MSG_ReadData(void *out, size_t len);
+uint8_t    MSG_ReadByte(void);
+uint16_t   MSG_ReadShort(void);
+int8_t     MSG_ReadChar(void);
+int32_t    MSG_ReadLong(void);
+char       *MSG_ReadString(void);
+uint16_t   MSG_ReadCoord(void);
+int16_t    MSG_ReadWord(void);
+uint8_t    MSG_ReadAngle(void);
+uint16_t   MSG_ReadAngle16(void);
+void       MSG_ReadPos(vec3_t pos);
+void       MSG_ReadDir(vec3_t dir);
+void       MSG_ParseDeltaEntity(const entity_state_t *from,
                           entity_state_t *to,
                           int            number,
                           int            bits,
                           msgEsFlags_t   flags);
 
-void ParseServerData(void);
-void ParseConfigString(void);
-uint16_t ParseEntityNumber(uint32_t bitmask);
-uint32_t ParseEntityBitmask(void);
-void ParseBaseline(int index, int bits);
-void ParseFrame(uint32_t extrabits);
-void ParsePlayerstate(player_state_t *ps);
-void ParsePacketEntities(void);
-void ParseSound(void);
-void ParsePrint(void);
-void ParseCenterprint(void);
-void ParseMuzzleFlash(void);
-void ParseTempEntity(void);
-void ParseStuffText(void);
-void ParseLayout(void);
-int ParseArgs(uint32_t argc, char **argv);
-char *va(const char *format, ...);
+void       MSG_ChunkLength(uint32_t len, msg_buffer_t *buf);
+void       MSG_WriteByte(byte b);
+void       MSG_WriteShort(uint16_t s);
+void       MSG_WriteLong(uint32_t l);
+void       MSG_WriteString(const char *str);
+void       MSG_WriteData(const void *data, size_t length);
+
+// parsing stuff
+void       ParseServerData(void);
+void       ParseConfigString(void);
+uint16_t   ParseEntityNumber(uint32_t bitmask);
+uint32_t   ParseEntityBitmask(void);
+void       ParseBaseline(int index, int bits);
+void       ParseFrame(uint32_t extrabits);
+void       ParsePlayerstate(player_state_t *ps);
+void       ParsePacketEntities(void);
+void       ParseSound(void);
+void       ParsePrint(void);
+void       ParseCenterprint(void);
+void       ParseMuzzleFlash(void);
+void       ParseTempEntity(void);
+void       ParseStuffText(void);
+void       ParseLayout(void);
+int        ParseArgs(uint32_t argc, char **argv);
+
+// utils
+void       WriteDemoFile(const char *filename);
+char       *va(const char *format, ...);
 const char *MZ_Name(uint32_t idx);
 const char *Flash_Name(temp_event_t idx);
 
+// multi-view demo stuff
+void       MVD_ParseServerData(uint32_t extrabits);
+
+
+uint32_t opt;
 uint32_t options;
-
-void MVD_ParseServerData(uint32_t extrabits);
-
 struct demo_s demo;
+
+// cumulatively merged configstrings.
+configstring_t cs_merged[MAX_CONFIGSTRINGS];
+
+// the starting strings sent on connect between serverdata and baselines
+configstring_t cs_initial[MAX_CONFIGSTRINGS];
+
+// cumulatively merged edicts
+entity_state_t ents_merged[MAX_EDICTS];
+
+// Initial state for each edict in the game.
+entity_state_t baselines[MAX_EDICTS];
 
 #endif

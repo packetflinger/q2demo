@@ -202,3 +202,58 @@ void MSG_ReadDir(vec3_t dir)
 }
 
 
+void MSG_WriteByte(byte b)
+{
+	msg.data[msg.index] = b;
+	msg.index++;
+	msg.length++;
+}
+
+void MSG_WriteShort(uint16_t s)
+{
+	msg.data[msg.index++] = s & 0xff;
+	msg.data[msg.index++] = s >> 8;
+	msg.length += 2;
+}
+
+void MSG_WriteLong(uint32_t l)
+{
+	msg.data[msg.index++] = l & 0xff;
+	msg.data[msg.index++] = (l >> 8) & 0xff;
+	msg.data[msg.index++] = (l >> 16) & 0xff;
+	msg.data[msg.index++] = l >> 24;
+	msg.length += 4;
+}
+
+void MSG_WriteString(const char *str)
+{
+	size_t len;
+
+	if (!str) {
+		MSG_WriteByte(0);
+		return;
+	}
+
+	len = strlen(str);
+
+	MSG_WriteData(str, len + 1);
+}
+
+void MSG_WriteData(const void *data, size_t length)
+{
+	uint32_t i;
+	for (i=0; i<length; i++) {
+		MSG_WriteByte(((byte *) data)[i]);
+	}
+}
+
+// write the length of the current chunk into a msg buffer
+void MSG_ChunkLength(uint32_t len, msg_buffer_t *buf)
+{
+	buf->data[buf->index++] = len & 0xff;
+	buf->data[buf->index++] = (len >> 8) & 0xff;
+	buf->data[buf->index++] = (len >> 16) & 0xff;
+	buf->data[buf->index++] = len >> 24;
+	buf->length += 4;
+}
+

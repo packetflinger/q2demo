@@ -13,7 +13,8 @@ HEADERS := demo.h
 OBJS :=	main.o \
 		msg.o \
 		parse.o \
-		util.o
+		util.o \
+		write.o
 
 TARGET ?= q2demo
 	

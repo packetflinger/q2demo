@@ -4,7 +4,7 @@ char currenttime[6]; 	// only for opentdm
 
 void ParseConfigString2(void)
 {
-	srv_configstring_t cs;
+	configstring_t cs;
 
 	cs.index = MSG_ReadShort();
 	strcpy(cs.string, MSG_ReadString());
