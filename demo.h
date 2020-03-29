@@ -1,14 +1,14 @@
 #ifndef DEMO_H
 #define DEMO_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <string.h>
 #include <getopt.h>
 #include <stdarg.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #ifndef _M_AMD64
 #define Q_stricmp _strcmpi	//odd, amd64 libc is missing this...
