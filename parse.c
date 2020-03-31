@@ -143,30 +143,6 @@ void ParseConfigString(void)
 
 	strncpy(demo.configstrings[index].string, str, MAX_CFGSTR_CHARS);
 
-/*
-	// it's an initial cs
-	if (!demo.frame_count) {
-		new_cs = &demo.configstrings[index];
-		new_cs->index = index;
-		strncpy(new_cs->string, str, sizeof(new_cs->string));
-		return;
-	}
-
-	fr = &demo.frames[demo.frame_current];
-	new_cs = malloc(sizeof(struct configstring_s));
-
-	cs = fr->cs;
-
-	// find the last cs
-	while (cs) {
-		cs = cs->next;
-	}
-
-	cs = new_cs;
-	cs->index = index;
-	strncpy(cs->string, str, sizeof(cs->string));
-
-*/
 	if ((options & OPT_CROP) && demo.frame_current >= crop_args.start && demo.frame_current <= crop_args.end) {
 		MSG_WriteShort(index);
 		MSG_WriteString(str);
@@ -250,6 +226,16 @@ void ParseFrame(uint32_t extrabits)
 
 	if ((options & OPT_VERBOSE) || (options & OPT_FRAMES)) {
 		strcat(buffer, va("Frame [%d]\n", framenum));
+	}
+
+	// start new demo file
+	if ((options & OPT_CROP) && !demo.recording) {
+		StartRecording();
+	}
+
+	if ((options & OPT_CROP) && demo.frame_current >= crop_args.start && demo.frame_current <= crop_args.end) {
+		//MSG_WriteShort(index);
+		//MSG_WriteString(str);
 	}
 }
 
@@ -427,8 +413,12 @@ void ParsePrint(void)
 	level = MSG_ReadByte();
 	print = MSG_ReadString();
 
-	if ((options & OPT_PRINTS) || (options & OPT_VERBOSE)) {
-		strcat(buffer, va("Print - %s", print)); // include \n
+	if (options & OPT_VERBOSE) {
+		strcat(buffer, va("Print - %s", print)); // includes \n
+	}
+
+	if (options & OPT_PRINTS) {
+		strcat(buffer, va("%s", print)); // includes\n
 	}
 }
 
