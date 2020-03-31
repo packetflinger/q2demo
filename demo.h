@@ -44,7 +44,8 @@ typedef struct {
 	byte           data[0xffff];
 } msg_buffer_t;
 
-msg_buffer_t msg;
+msg_buffer_t msg;    // for reading existing demo file
+msg_buffer_t msg2;   // for writing new demo files
 
 char buffer[0xffff];
 
@@ -499,7 +500,28 @@ typedef struct {
     struct configstring_s *cs;
 } serverframe_t;
 
+typedef struct {
+	uint8_t level;
+	char string[1024];
+} serverprint_t;
 
+
+typedef struct {
+	char string[1024];
+} stufftext_t;
+
+typedef struct {
+	char string[1024];
+} layout_t;
+
+typedef struct {
+	uint16_t ent;
+	uint8_t flash;
+} muzzleflash_t;
+
+typedef struct {
+	char string[1024];
+} centerprint_t;
 
 /**
  * The entire demo is parsed (decompressed) into this structure. From there
@@ -513,7 +535,7 @@ struct demo_s {
 	configstring_t   configstrings[MAX_CONFIGSTRINGS]; // initial
 
 	// cumulatively merged strings at a certain point in time
-	configstring_t   configstrings_merged[MAX_CONFIGSTRINGS];
+	//configstring_t   configstrings_merged[MAX_CONFIGSTRINGS];
 
 	// initial entity states (positions, orientations, etc)
 	entity_state_t   baselines[MAX_EDICTS];
@@ -532,6 +554,31 @@ struct demo_s {
 };
 
 /**
+ * a merged (uncompressed) server frame
+ */
+typedef struct {
+	serverframe_t      frameinfo;
+	player_state_t     ps;
+	entity_state_t     edicts[MAX_EDICTS];
+	configstring_t     strings[20];
+	serverprint_t      prints[20];
+	centerprint_t      centerprints[5];
+	snd_params_t       sounds[20];
+	stufftext_t        stuffs[20];
+	tent_params_t      tempents[20];
+	muzzleflash_t      flashes[20];
+	layout_t           layouts[20];
+} frame_t;
+
+
+typedef struct {
+	uint16_t start;
+	uint16_t end;
+} crop_args_t;
+
+crop_args_t crop_args;
+
+/**
  * Command line arguments options
  */
 #define OPT_VERBOSE    1
@@ -541,6 +588,7 @@ struct demo_s {
 #define OPT_FRAMES     16
 #define OPT_LAYOUTS    32
 #define OPT_JSON       64
+#define OPT_CROP       128
 
 
 //
@@ -624,6 +672,7 @@ void       ParseTempEntity(void);
 void       ParseStuffText(void);
 void       ParseLayout(void);
 int        ParseArgs(uint32_t argc, char **argv);
+void       ParseCropArgs(char *str);
 
 // utils
 void       WriteDemoFile(const char *filename);
