@@ -58,3 +58,30 @@ void WriteDemoFile(const char *filename)
 	fclose(fp);
 }
 
+/**
+ * Open the new demo file and write all the headers (serverdata, cstrings, baselines)
+ */
+void StartRecording(char *newdemoname) {
+	outfile = fopen(newdemoname, "wb");
+	if (!outfile) {
+		return;
+	}
+
+	memset(&msg2, 0, sizeof(msg_buffer_t));
+
+	demo.recording = true;
+}
+
+/**
+ * Write a chunk of (if not the entire) output buffer to file.
+ * Returns the number of bytes written
+ */
+uint32_t WriteBuffer(void) {
+	msg_buffer_t tmpmsg;
+
+	if (msg2.length <= MAX_DEMO_CHUNK_SIZE) {
+
+	}
+
+	return 0;
+}
