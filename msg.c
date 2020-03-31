@@ -202,48 +202,48 @@ void MSG_ReadDir(vec3_t dir)
 }
 
 
-void MSG_WriteByte(byte b)
+void MSG_WriteByte(byte b, msg_buffer_t *buf)
 {
-	msg2.data[msg2.index] = b;
-	msg2.index++;
-	msg2.length++;
+	buf->data[buf->index] = b;
+	buf->index++;
+	buf->length++;
 }
 
-void MSG_WriteShort(uint16_t s)
+void MSG_WriteShort(uint16_t s, msg_buffer_t *buf)
 {
-	msg2.data[msg2.index++] = s & 0xff;
-	msg2.data[msg2.index++] = s >> 8;
-	msg2.length += 2;
+	buf->data[buf->index++] = s & 0xff;
+	buf->data[buf->index++] = s >> 8;
+	buf->length += 2;
 }
 
-void MSG_WriteLong(uint32_t l)
+void MSG_WriteLong(uint32_t l, msg_buffer_t *buf)
 {
-	msg2.data[msg2.index++] = l & 0xff;
-	msg2.data[msg2.index++] = (l >> 8) & 0xff;
-	msg2.data[msg2.index++] = (l >> 16) & 0xff;
-	msg2.data[msg2.index++] = l >> 24;
-	msg2.length += 4;
+	buf->data[buf->index++] = l & 0xff;
+	buf->data[buf->index++] = (l >> 8) & 0xff;
+	buf->data[buf->index++] = (l >> 16) & 0xff;
+	buf->data[buf->index++] = l >> 24;
+	buf->length += 4;
 }
 
-void MSG_WriteString(const char *str)
+void MSG_WriteString(const char *str, msg_buffer_t *buf)
 {
 	size_t len;
 
 	if (!str) {
-		MSG_WriteByte(0);
+		MSG_WriteByte(0, buf);
 		return;
 	}
 
 	len = strlen(str);
 
-	MSG_WriteData(str, len + 1);
+	MSG_WriteData(str, len + 1, buf);
 }
 
-void MSG_WriteData(const void *data, size_t length)
+void MSG_WriteData(const void *data, size_t length, msg_buffer_t *buf)
 {
 	uint32_t i;
 	for (i=0; i<length; i++) {
-		MSG_WriteByte(((byte *) data)[i]);
+		MSG_WriteByte(((byte *) data)[i], buf);
 	}
 }
 

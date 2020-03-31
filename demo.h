@@ -29,6 +29,7 @@
 #define SVCMD_BITS          5
 #define SVCMD_MASK          ((1 << SVCMD_BITS) - 1)
 #define CLIENTNUM_NONE      (MAX_CLIENTS - 1)
+#define MAX_DEMO_CHUNK_SIZE 1024
 
 #define OPENTDM_TIME		1572
 
@@ -551,6 +552,9 @@ struct demo_s {
 
 	// the current frame number;
 	uint32_t         frame_current;
+
+	// whether we're currently writing a new demo file or not
+	bool             recording;
 };
 
 /**
@@ -649,11 +653,11 @@ void       MSG_ParseDeltaEntity(const entity_state_t *from,
                           msgEsFlags_t   flags);
 
 void       MSG_ChunkLength(uint32_t len, msg_buffer_t *buf);
-void       MSG_WriteByte(byte b);
-void       MSG_WriteShort(uint16_t s);
-void       MSG_WriteLong(uint32_t l);
-void       MSG_WriteString(const char *str);
-void       MSG_WriteData(const void *data, size_t length);
+void       MSG_WriteByte(byte b, msg_buffer_t *buf);
+void       MSG_WriteShort(uint16_t s, msg_buffer_t *buf);
+void       MSG_WriteLong(uint32_t l, msg_buffer_t *buf);
+void       MSG_WriteString(const char *str, msg_buffer_t *buf);
+void       MSG_WriteData(const void *data, size_t length, msg_buffer_t *buf);
 
 // parsing stuff
 void       ParseServerData(void);
@@ -680,6 +684,10 @@ char       *va(const char *format, ...);
 const char *MZ_Name(uint32_t idx);
 const char *Flash_Name(temp_event_t idx);
 
+// writing
+void       StartRecording(char *newdemoname);
+uint32_t   WriteBuffer(void);
+
 // multi-view demo stuff
 void       MVD_ParseServerData(uint32_t extrabits);
 
@@ -687,6 +695,8 @@ void       MVD_ParseServerData(uint32_t extrabits);
 uint32_t opt;
 uint32_t options;
 struct demo_s demo;
+
+FILE *outfile;
 
 // cumulatively merged configstrings.
 configstring_t cs_merged[MAX_CONFIGSTRINGS];
