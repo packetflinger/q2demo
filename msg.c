@@ -204,25 +204,25 @@ void MSG_ReadDir(vec3_t dir)
 
 void MSG_WriteByte(byte b)
 {
-	msg.data[msg.index] = b;
-	msg.index++;
-	msg.length++;
+	msg2.data[msg2.index] = b;
+	msg2.index++;
+	msg2.length++;
 }
 
 void MSG_WriteShort(uint16_t s)
 {
-	msg.data[msg.index++] = s & 0xff;
-	msg.data[msg.index++] = s >> 8;
-	msg.length += 2;
+	msg2.data[msg2.index++] = s & 0xff;
+	msg2.data[msg2.index++] = s >> 8;
+	msg2.length += 2;
 }
 
 void MSG_WriteLong(uint32_t l)
 {
-	msg.data[msg.index++] = l & 0xff;
-	msg.data[msg.index++] = (l >> 8) & 0xff;
-	msg.data[msg.index++] = (l >> 16) & 0xff;
-	msg.data[msg.index++] = l >> 24;
-	msg.length += 4;
+	msg2.data[msg2.index++] = l & 0xff;
+	msg2.data[msg2.index++] = (l >> 8) & 0xff;
+	msg2.data[msg2.index++] = (l >> 16) & 0xff;
+	msg2.data[msg2.index++] = l >> 24;
+	msg2.length += 4;
 }
 
 void MSG_WriteString(const char *str)
