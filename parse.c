@@ -4,9 +4,10 @@ int ParseArgs(uint32_t argc, char **argv)
 {
 
 	uint16_t i;
+
 	options = 0;
 
-	while ((opt = getopt(argc, argv, "vphcflj")) != -1) {
+	while ((opt = getopt(argc, argv, "vphcfljx:")) != -1) {
 		switch(opt) {
 		case 'p':
 			options |= OPT_PRINTS;
@@ -36,6 +37,10 @@ int ParseArgs(uint32_t argc, char **argv)
 			options = OPT_USAGE;
 			break;
 
+		case 'x':
+			options |= OPT_CROP;
+			ParseCropArgs(optarg);
+			break;
 		case '?':
 			printf("unknown option: %c\n", optopt);
 			break;
@@ -51,11 +56,53 @@ int ParseArgs(uint32_t argc, char **argv)
 		printf("  -h (this help message)\n");
 		printf("  -j (output in JSON format\n");
 		printf("  -p (output only server print message (chat, obituaries, etc)\n");
-		printf("  -v (output verbose parsing information - each message parsed)\n\n");
+		printf("  -v (output verbose parsing information - each message parsed)\n");
+		printf("  -x <framestart:frameend> (crop a demo to frames xx:yy)\n\n");
 		exit(EXIT_SUCCESS);
 	}
 
 	return optind;
+}
+
+/**
+ * args to crop flag are given as "##:##" on the command line. Break these
+ * up into separate start and stop integers
+ */
+void ParseCropArgs(char *str) {
+
+	char *delimiter = ":";
+	char *token;
+
+	// no arg givn
+	if (!str[0]) {
+		options &= ~OPT_CROP;
+		return;
+	}
+
+	// no ":" found in the arg, not valid
+	if (!strstr(str, delimiter)) {
+		options &= ~OPT_CROP;
+		return;
+	}
+
+	token = strtok(str, delimiter);
+	crop_args.start = atoi(token);
+
+	token = strtok(NULL, delimiter);
+	crop_args.end = atoi(token);
+
+	// sanity checks
+	if (crop_args.start == crop_args.end) {
+		options &= ~OPT_CROP;
+		return;
+	}
+
+	if (crop_args.start > crop_args.end) {
+		options &= ~OPT_CROP;
+		return;
+	}
+
+	printf("crop start: %d, crop end: %d\n", crop_args.start, crop_args.end);
 }
 
 /**
@@ -93,6 +140,10 @@ void ParseConfigString(void)
 	index = MSG_ReadShort();
 	str = MSG_ReadString();
 
+
+	strncpy(demo.configstrings[index].string, str, MAX_CFGSTR_CHARS);
+
+/*
 	// it's an initial cs
 	if (!demo.frame_count) {
 		new_cs = &demo.configstrings[index];
@@ -114,6 +165,12 @@ void ParseConfigString(void)
 	cs = new_cs;
 	cs->index = index;
 	strncpy(cs->string, str, sizeof(cs->string));
+
+*/
+	if ((options & OPT_CROP) && demo.frame_current >= crop_args.start && demo.frame_current <= crop_args.end) {
+		MSG_WriteShort(index);
+		MSG_WriteString(str);
+	}
 
 	if ((options & OPT_JSON)) {
 		strcat(buffer, va("\"config\""));
@@ -185,6 +242,11 @@ void ParseFrame(uint32_t extrabits)
 	fr->delta = deltanum;
 	fr->suppressed = suppressed;
 	MSG_ReadData(&fr->areabits, areabytes);
+
+	// previous frame is still in the writing buffer, write it to disk
+	if (msg2.length) {
+
+	}
 
 	if ((options & OPT_VERBOSE) || (options & OPT_FRAMES)) {
 		strcat(buffer, va("Frame [%d]\n", framenum));
