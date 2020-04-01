@@ -29,7 +29,7 @@
 #define SVCMD_BITS          5
 #define SVCMD_MASK          ((1 << SVCMD_BITS) - 1)
 #define CLIENTNUM_NONE      (MAX_CLIENTS - 1)
-#define MAX_DEMO_CHUNK_SIZE 1024
+#define MAX_DEMO_CHUNK_SIZE 4096
 
 #define OPENTDM_TIME		1572
 
@@ -44,6 +44,7 @@
 #define RF_BEAM             128
 
 #define VectorCompare(v1,v2)    ((v1)[0]==(v2)[0]&&(v1)[1]==(v2)[1]&&(v1)[2]==(v2)[2])
+#define CROPFRAME(f)    ((f >= crop_args.start) && (f <= crop_args.end))
 
 typedef unsigned char       byte;
 
@@ -325,9 +326,9 @@ typedef struct {
 	uint32_t    version;
 	uint32_t    count;
 	byte        demo;
-	char        *gamedir;
+	char        gamedir[256];
 	uint16_t    client_edict;
-	char        *map;
+	char        map[256];
 } serverdata_t;
 
 struct configstring_s {
@@ -570,6 +571,8 @@ struct demo_s {
 
 	// original demo name
 	char             *filename;
+
+	char             layout[1024];
 };
 
 /**

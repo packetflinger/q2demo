@@ -112,27 +112,21 @@ void ParseServerData(void)
 {
 	serverdata_t *srv = &demo.serverdata;
 
+	memset(srv, 0, sizeof(serverdata_t));
+
 	srv->version = MSG_ReadLong();
 	srv->count = MSG_ReadLong();
 	srv->demo = MSG_ReadByte();
-	srv->gamedir = MSG_ReadString();
+	//srv->gamedir = MSG_ReadString();
+	strncpy(srv->gamedir, MSG_ReadString(), sizeof(srv->gamedir));
 	srv->client_edict = MSG_ReadShort();
-	srv->map = MSG_ReadString();
+	//srv->map = MSG_ReadString();
+	strncpy(srv->map, MSG_ReadString(), sizeof(srv->map));
 
 	if (options & OPT_JSON) {
 		//strcat(buffer, va("\"serverdata\": { \"protocol_version\": %d, \"game\": \"%s\", \"client_edict\": %d, \"map\": \"%s\" } ", data.version, data.gamedir, data.client_edict, data.map));
 	} else if (options & OPT_VERBOSE) {
 		strcat(buffer, "ServerData\n");
-	}
-
-	if (options & OPT_CROP) {
-		MSG_WriteByte(svc_serverdata, &msg2);
-		MSG_WriteLong(srv->version, &msg2);
-		MSG_WriteLong(srv->count, &msg2);
-		MSG_WriteByte(srv->demo, &msg2);
-		MSG_WriteString(srv->gamedir, &msg2);
-		MSG_WriteShort(srv->client_edict, &msg2);
-		MSG_WriteString(srv->map, &msg2);
 	}
 }
 
@@ -152,12 +146,6 @@ void ParseConfigString(void)
 
 
 	strncpy(demo.configstrings[index].string, str, MAX_CFGSTR_CHARS);
-
-	if (options & OPT_CROP) {
-		MSG_WriteByte(svc_configstring, &msg2);
-		MSG_WriteShort(index, &msg2);
-		MSG_WriteString(str, &msg2);
-	}
 
 	if ((options & OPT_JSON)) {
 		strcat(buffer, va("\"config\""));
@@ -210,12 +198,6 @@ void ParseBaseline(int index, int bits)
     if (options & OPT_VERBOSE) {
     	strcat(buffer, va("Baseline [%d]\n", index));
     }
-
-    if (options & OPT_CROP) {
-    	MSG_WriteByte(svc_spawnbaseline, &msg2);
-    	MSG_PackEntity(&pack, &demo.baselines[index], false);
-    	MSG_WriteDeltaEntity(NULL, &pack, 0, &msg2);
-    }
 }
 
 void ParseFrame(uint32_t extrabits)
@@ -238,6 +220,8 @@ void ParseFrame(uint32_t extrabits)
 	fr->suppressed = suppressed;
 	MSG_ReadData(&fr->areabits, areabytes);
 
+	demo.frame_current = framenum;
+
 	// previous frame is still in the writing buffer, write it to disk
 	if (msg2.length) {
 
@@ -248,13 +232,17 @@ void ParseFrame(uint32_t extrabits)
 	}
 
 	// start new demo file
-	if ((options & OPT_CROP) && !demo.recording) {
+	if ((options & OPT_CROP) && CROPFRAME(framenum) && !demo.recording) {
 		StartRecording(va("%s-1", demo.filename));
 	}
 
-	if ((options & OPT_CROP) && demo.frame_current >= crop_args.start && demo.frame_current <= crop_args.end) {
-		//MSG_WriteShort(index);
-		//MSG_WriteString(str);
+	if ((options & OPT_CROP) && demo.recording) {
+		// emit frame to demo file
+	}
+
+	// we hit the end of the crop, stop capturing the demo
+	if ((options & OPT_CROP) && demo.recording && demo.frame_current >= crop_args.end) {
+		EndRecording();
 	}
 }
 
@@ -602,13 +590,13 @@ void ParseStuffText(void)
 
 void ParseLayout(void)
 {
-	static char *layout;
-	layout = MSG_ReadString();
+	strncpy(demo.layout, MSG_ReadString(), 1024);
+
 	if (options & OPT_VERBOSE) {
 		strcat(buffer, "Layout\n");
 	}
 
 	if (options & OPT_LAYOUTS) {
-		strcat(buffer, ("Layout - %s\n", layout));
+		strcat(buffer, ("Layout - %s\n", demo.layout));
 	}
 }

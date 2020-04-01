@@ -80,6 +80,8 @@ void ParseDemo(const char *filename)
 		return;
 	}
 
+	memset(&demo, 0, sizeof(struct demo_s));
+
 	// save for later
 	demo.filename = (void *) filename;
 
@@ -118,9 +120,6 @@ void ParseDemo(const char *filename)
 	}
 
 	fclose(fp);
-
-
-	//WriteDemoFile(va("%s-1", filename));
 }
 
 uint32_t main(uint32_t argc, char **argv)

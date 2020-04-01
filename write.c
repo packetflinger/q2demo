@@ -65,14 +65,49 @@ void WriteDemoFile(const char *filename)
  * Open the new demo file and write all the headers (serverdata, cstrings, baselines)
  */
 void StartRecording(char *newdemoname) {
+	uint16_t i;
+	entity_packed_t pack;
+
 	outfile = fopen(newdemoname, "wb");
 	if (!outfile) {
 		return;
 	}
 
-	//memset(&msg2, 0, sizeof(msg_buffer_t));
+	memset(&msg2, 0, sizeof(msg_buffer_t));
 
 	demo.recording = true;
+
+	// serverdata first
+	MSG_WriteByte(svc_serverdata, &msg2);
+	MSG_WriteLong(demo.serverdata.version, &msg2);
+	MSG_WriteLong(demo.serverdata.count, &msg2);
+	MSG_WriteByte(demo.serverdata.demo, &msg2);
+	MSG_WriteString(demo.serverdata.gamedir, &msg2);
+	MSG_WriteShort(demo.serverdata.client_edict, &msg2);
+	MSG_WriteString(demo.serverdata.map, &msg2);
+
+	// then configstrings
+	for (i=0; i<MAX_CONFIGSTRINGS; i++) {
+		if (!demo.configstrings[i].string[0]) {
+			continue;
+		}
+		MSG_WriteByte(svc_configstring, &msg2);
+		MSG_WriteShort(i, &msg2);
+		MSG_WriteString(demo.configstrings[i].string, &msg2);
+	}
+
+	// write the buffer now, it should be rather large now
+	WriteBuffer(&msg2);
+
+	// then add baslines
+	for (i=0; i<MAX_EDICTS; i++) {
+		if (!demo.baselines[i].number) {
+			continue;
+		}
+		MSG_WriteByte(svc_spawnbaseline, &msg2);
+		MSG_PackEntity(&pack, &demo.baselines[i], false);
+		MSG_WriteDeltaEntity(NULL, &pack, 0, &msg2);
+	}
 
 	MSG_WriteByte(svc_stufftext, &msg2);
 	MSG_WriteString("precache\n", &msg2);
@@ -85,6 +120,10 @@ void StartRecording(char *newdemoname) {
  */
 void EndRecording(void) {
 	uint32_t eof = 0xffffffff;
+
+	if (!demo.recording) {
+		return;
+	}
 
 	fwrite(&eof, sizeof(uint32_t), 1, outfile);
 	fclose(outfile);
@@ -101,6 +140,12 @@ size_t WriteBuffer(msg_buffer_t *in) {
 	size_t ret;
 	msg_buffer_t tmpmsg;
 
+	memset(&tmpmsg, 0, sizeof(msg_buffer_t));
+
+	MSG_WriteLong(in->length, &tmpmsg);
+	MSG_WriteData(in->data, in->length, &tmpmsg);
+
+	/*
 	if (in->length <= MAX_DEMO_CHUNK_SIZE) {
 		MSG_WriteLong(in->length, &tmpmsg);
 		MSG_WriteData(in->data, in->length, &tmpmsg);
@@ -120,8 +165,11 @@ size_t WriteBuffer(msg_buffer_t *in) {
 			MSG_WriteData(in->data, in->length, &tmpmsg);
 		}
 	}
+	*/
 
 	ret = fwrite(&tmpmsg.data, tmpmsg.length, 1, outfile);
+
+	memset(in, 0, sizeof(msg_buffer_t));
 
 	return ret;
 }
