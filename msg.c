@@ -50,9 +50,9 @@ char *MSG_ReadString(void)
 	static char character;
 	size_t i, len = 0;
 
-	do {
+	while (msg.data[(msg.index + len)] != 0) {
 		len++;
-	} while (msg.data[(msg.index + len)] != 0);
+	}
 
 	memset(&str, 0, MAX_STRING_CHARS);
 
