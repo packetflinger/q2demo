@@ -145,28 +145,6 @@ size_t WriteBuffer(msg_buffer_t *in) {
 	MSG_WriteLong(in->length, &tmpmsg);
 	MSG_WriteData(in->data, in->length, &tmpmsg);
 
-	/*
-	if (in->length <= MAX_DEMO_CHUNK_SIZE) {
-		MSG_WriteLong(in->length, &tmpmsg);
-		MSG_WriteData(in->data, in->length, &tmpmsg);
-	} else {
-		while (in->length > MAX_DEMO_CHUNK_SIZE) {
-			MSG_WriteLong(MAX_DEMO_CHUNK_SIZE, &tmpmsg);
-			MSG_WriteData(in->data, MAX_DEMO_CHUNK_SIZE, &tmpmsg);
-
-			// shift off the part of the data we just used
-			memmove(&in->data[0], &in->data[MAX_DEMO_CHUNK_SIZE], in->length - MAX_DEMO_CHUNK_SIZE);
-			in->length -= MAX_DEMO_CHUNK_SIZE;
-		}
-
-		// anything left over
-		if (in->length) {
-			MSG_WriteLong(in->length, &tmpmsg);
-			MSG_WriteData(in->data, in->length, &tmpmsg);
-		}
-	}
-	*/
-
 	ret = fwrite(&tmpmsg.data, tmpmsg.length, 1, outfile);
 
 	memset(in, 0, sizeof(msg_buffer_t));
