@@ -80,6 +80,9 @@ void ParseDemo(const char *filename)
 		return;
 	}
 
+	// save for later
+	demo.filename = (void *) filename;
+
 	// loop through each chunk of server messages (typically one per server frame)
 	while (1) {
 		memset(&msg, 0, sizeof(msg_buffer_t));
@@ -110,10 +113,14 @@ void ParseDemo(const char *filename)
 		}
 	}
 
+	if ((options & OPT_CROP) && demo.recording) {
+		EndRecording();
+	}
+
 	fclose(fp);
 
 
-	WriteDemoFile(va("%s-1", filename));
+	//WriteDemoFile(va("%s-1", filename));
 }
 
 uint32_t main(uint32_t argc, char **argv)

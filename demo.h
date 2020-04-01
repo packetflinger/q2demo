@@ -33,6 +33,18 @@
 
 #define OPENTDM_TIME		1572
 
+#define COORD2SHORT(x)  ((int)((x)*8.0f))
+#define SHORT2COORD(x)  ((x)*(1.0f/8))
+#define ANGLE2BYTE(x)   ((int)((x)*256.0f/360)&255)
+#define BYTE2ANGLE(x)   ((x)*(360.0f/256))
+#define ANGLE2SHORT(x)  ((int)((x)*65536/360) & 65535)
+
+// render fx options
+#define RF_FRAMELERP        64
+#define RF_BEAM             128
+
+#define VectorCompare(v1,v2)    ((v1)[0]==(v2)[0]&&(v1)[1]==(v2)[1]&&(v1)[2]==(v2)[2])
+
 typedef unsigned char       byte;
 
 typedef float               vec_t;
@@ -555,6 +567,9 @@ struct demo_s {
 
 	// whether we're currently writing a new demo file or not
 	bool             recording;
+
+	// original demo name
+	char             *filename;
 };
 
 /**
@@ -658,6 +673,9 @@ void       MSG_WriteShort(uint16_t s, msg_buffer_t *buf);
 void       MSG_WriteLong(uint32_t l, msg_buffer_t *buf);
 void       MSG_WriteString(const char *str, msg_buffer_t *buf);
 void       MSG_WriteData(const void *data, size_t length, msg_buffer_t *buf);
+void       MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, bool short_angles);
+void       MSG_WriteDeltaEntity(const entity_packed_t *from, const entity_packed_t *to, msgEsFlags_t flags, msg_buffer_t *buf);
+
 
 // parsing stuff
 void       ParseServerData(void);
@@ -686,7 +704,8 @@ const char *Flash_Name(temp_event_t idx);
 
 // writing
 void       StartRecording(char *newdemoname);
-uint32_t   WriteBuffer(void);
+void       EndRecording(void);
+size_t     WriteBuffer(msg_buffer_t *in);
 
 // multi-view demo stuff
 void       MVD_ParseServerData(uint32_t extrabits);

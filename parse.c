@@ -124,6 +124,16 @@ void ParseServerData(void)
 	} else if (options & OPT_VERBOSE) {
 		strcat(buffer, "ServerData\n");
 	}
+
+	if (options & OPT_CROP) {
+		MSG_WriteByte(svc_serverdata, &msg2);
+		MSG_WriteLong(srv->version, &msg2);
+		MSG_WriteLong(srv->count, &msg2);
+		MSG_WriteByte(srv->demo, &msg2);
+		MSG_WriteString(srv->gamedir, &msg2);
+		MSG_WriteShort(srv->client_edict, &msg2);
+		MSG_WriteString(srv->map, &msg2);
+	}
 }
 
 /**
@@ -143,9 +153,10 @@ void ParseConfigString(void)
 
 	strncpy(demo.configstrings[index].string, str, MAX_CFGSTR_CHARS);
 
-	if ((options & OPT_CROP) && demo.frame_current >= crop_args.start && demo.frame_current <= crop_args.end) {
-		MSG_WriteShort(index);
-		MSG_WriteString(str);
+	if (options & OPT_CROP) {
+		MSG_WriteByte(svc_configstring, &msg2);
+		MSG_WriteShort(index, &msg2);
+		MSG_WriteString(str, &msg2);
 	}
 
 	if ((options & OPT_JSON)) {
@@ -188,6 +199,8 @@ uint16_t ParseEntityNumber(uint32_t bitmask)
 
 void ParseBaseline(int index, int bits)
 {
+	entity_packed_t pack;
+
     if (index < 1 || index >= MAX_EDICTS) {
         printf("Err: Baseline index out of range\n");
     }
@@ -196,6 +209,12 @@ void ParseBaseline(int index, int bits)
 
     if (options & OPT_VERBOSE) {
     	strcat(buffer, va("Baseline [%d]\n", index));
+    }
+
+    if (options & OPT_CROP) {
+    	MSG_WriteByte(svc_spawnbaseline, &msg2);
+    	MSG_PackEntity(&pack, &demo.baselines[index], false);
+    	MSG_WriteDeltaEntity(NULL, &pack, 0, &msg2);
     }
 }
 
@@ -230,7 +249,7 @@ void ParseFrame(uint32_t extrabits)
 
 	// start new demo file
 	if ((options & OPT_CROP) && !demo.recording) {
-		StartRecording();
+		StartRecording(va("%s-1", demo.filename));
 	}
 
 	if ((options & OPT_CROP) && demo.frame_current >= crop_args.start && demo.frame_current <= crop_args.end) {
