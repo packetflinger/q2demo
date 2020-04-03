@@ -125,9 +125,7 @@ void ParseDemo(const char *filename)
 
 uint32_t main(uint32_t argc, char **argv)
 {
-	int i;
-
-	i = ParseArgs(argc, argv);
+	int i = ParseArgs(argc, argv);
 
 	for (; i < argc; i++) {
 		ParseDemo(argv[i]);
