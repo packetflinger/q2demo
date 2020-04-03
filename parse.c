@@ -101,8 +101,6 @@ void ParseCropArgs(char *str) {
 		options &= ~OPT_CROP;
 		return;
 	}
-
-	printf("crop start: %d, crop end: %d\n", crop_args.start, crop_args.end);
 }
 
 /**
@@ -135,15 +133,11 @@ void ParseServerData(void)
  */
 void ParseConfigString(void)
 {
-	struct configstring_s *new_cs, *cs;
-	serverframe_t *fr;
-
 	uint16_t index;
 	char *str;
 
 	index = MSG_ReadShort();
 	str = MSG_ReadString();
-
 
 	strncpy(demo.configstrings[index].string, str, MAX_CFGSTR_CHARS);
 
@@ -151,6 +145,13 @@ void ParseConfigString(void)
 		strcat(buffer, va("\"config\""));
 	} else if ((options & OPT_VERBOSE) || (options & OPT_CSTRINGS)) {
 		strcat(buffer, va("ConfigString [%d] - %s\n", index, str));
+	}
+
+	// send it to the new demo
+	if ((options & OPT_CROP) && demo.recording) {
+		MSG_WriteByte(svc_configstring, &msg2);
+		MSG_WriteShort(index, &msg2);
+		MSG_WriteString(str, &msg2);
 	}
 }
 
@@ -202,42 +203,55 @@ void ParseBaseline(int index, int bits)
 
 void ParseFrame(uint32_t extrabits)
 {
-	uint32_t framenum, deltanum, areabytes;
-	serverframe_t *fr;
+	serverframe_t *fr = &demo.current_frame.frameinfo;
+	serverframe_t *last_fr = &demo.last_frame.frameinfo;
 
-	int suppressed, length;
+	demo.frame_number++;
 
-	framenum = MSG_ReadLong();
-	deltanum = MSG_ReadLong();
-	suppressed = MSG_ReadByte();
-	areabytes = MSG_ReadByte();
-
-	fr = &demo.frames[framenum];
-
-	memset(fr, 0, sizeof(serverframe_t));
-	fr->number = framenum;
-	fr->delta = deltanum;
-	fr->suppressed = suppressed;
-	MSG_ReadData(&fr->areabits, areabytes);
-
-	demo.frame_current = framenum;
-
-	// previous frame is still in the writing buffer, write it to disk
-	if (msg2.length) {
-
+	// pending msgs in the buffer, write them before processing the new frame
+	if ((options & OPT_CROP) && demo.recording && msg2.length) {
+		WriteBuffer(&msg2);
 	}
 
+	// move previous current frame to last frame and this frame becomes current
+	memset(&demo.last_frame, 0, sizeof(frame_t));
+	memcpy(&demo.last_frame, &demo.current_frame, sizeof(frame_t));
+
+	// don't use these values, frame number will be reset to zero, but we still
+	// need to parse them anyway
+	MSG_ReadLong();  // frame
+	MSG_ReadLong();  // delta
+
+	fr->number = demo.frame_number;
+	fr->delta = demo.delta_frame_number;
+	fr->suppressed = MSG_ReadByte();
+	fr->areabytes = MSG_ReadByte();
+	MSG_ReadData(&fr->areabits, fr->areabytes);
+
+	demo.frame_current = fr->number;
+
 	if ((options & OPT_VERBOSE) || (options & OPT_FRAMES)) {
-		strcat(buffer, va("Frame [%d]\n", framenum));
+		strcat(buffer, va("Frame [%d]\n", fr->number));
 	}
 
 	// start new demo file
-	if ((options & OPT_CROP) && CROPFRAME(framenum) && !demo.recording) {
+	if ((options & OPT_CROP) && CROPFRAME(fr->number) && !demo.recording) {
 		StartRecording(va("%s-1", demo.filename));
+	}
+
+	// being 0 would mean this is the first frame, if so, we're not delta-ing, so set previous to -1
+	if (last_fr->number == 0) {
+		last_fr->number = -1;
 	}
 
 	if ((options & OPT_CROP) && demo.recording) {
 		// emit frame to demo file
+		MSG_WriteByte(svc_frame, &msg2);
+		MSG_WriteLong(fr->number, &msg2);
+		MSG_WriteLong(last_fr->number, &msg2);
+		MSG_WriteByte(0, &msg2);
+		MSG_WriteByte(fr->areabytes, &msg2);
+		MSG_WriteData(&fr->areabits, fr->areabytes, &msg2);
 	}
 
 	// we hit the end of the crop, stop capturing the demo
@@ -246,10 +260,15 @@ void ParseFrame(uint32_t extrabits)
 	}
 }
 
+/**
+ * Read and unpack the current playerstate
+ */
 void ParsePlayerstate(player_state_t *ps)
 {
 	uint32_t bits;
 	int i, statbits;
+	player_packed_t from = demo.last_frame.ps_packed;
+	player_packed_t *to = &demo.current_frame.ps_packed;
 
 	bits = MSG_ReadWord();
 
@@ -329,12 +348,22 @@ void ParsePlayerstate(player_state_t *ps)
         ps->rdflags = MSG_ReadByte();
 
     statbits = MSG_ReadLong();
-    for (i = 0; i < MAX_STATS; i++)
-        if (statbits & (1U << i))
+    for (i = 0; i < MAX_STATS; i++) {
+        if (statbits & (1U << i)) {
             ps->stats[i] = MSG_ReadShort();
+        }
+    }
+
+    // pack the current playerstate for later comparison
+    MSG_PackPlayer(to, ps);
 
     if (options & OPT_VERBOSE) {
     	strcat(buffer, "PlayerState\n");
+    }
+
+    if ((options & OPT_CROP) && demo.recording) {
+    	MSG_WriteByte(svc_playerinfo, &msg2);
+    	MSG_WriteDeltaPlayerstate_Default(&from, to, &msg2);
     }
 }
 
@@ -342,25 +371,51 @@ void ParsePacketEntities(void)
 {
 	static uint32_t bits;
 	static uint16_t num;
-	static entity_state_t nullstate;
+	//static entity_state_t tempstate;
+
+	entity_state_t *from;
+	entity_state_t *to;
+
+	entity_packed_t *from_p;
+	entity_packed_t *to_p;
 
 	if (options & OPT_VERBOSE) {
 		strcat(buffer, "PacketEntities - ");
+	}
+
+	// all entities are grouped in a single block
+	if ((options & OPT_CROP) && demo.recording) {
+		MSG_WriteByte(svc_packetentities, &msg2);
 	}
 
 	while (true) {
 		bits = ParseEntityBitmask();
 		num = ParseEntityNumber(bits);
 
+		from = &demo.last_frame.edicts[num];
+		to = &demo.current_frame.edicts[num];
+
+		from_p = &demo.last_frame.edicts_packed[num];
+		to_p = &demo.current_frame.edicts_packed[num];
+
 		if (num <= 0) {
 			break;
 		}
 
-		MSG_ParseDeltaEntity(NULL, &nullstate, num, bits, 0);
+		MSG_ParseDeltaEntity(from, to, num, bits, 0);
+		MSG_PackEntity(to_p, to, 0);
 
 		if (options & OPT_VERBOSE) {
 			strcat(buffer, va("%d ", num));
 		}
+
+		if ((options & OPT_CROP) && demo.recording) {
+			MSG_WriteDeltaEntity(from_p, to_p, 0, &msg2);
+		}
+	}
+
+	if ((options & OPT_CROP) && demo.recording) {
+		MSG_WriteShort(0, &msg2);
 	}
 
 	if (options & OPT_VERBOSE) {
@@ -427,6 +482,12 @@ void ParsePrint(void)
 	if (options & OPT_PRINTS) {
 		strcat(buffer, va("%s", print)); // includes\n
 	}
+
+	if ((options & OPT_CROP) && demo.recording) {
+		MSG_WriteByte(svc_print, &msg2);
+		MSG_WriteByte(level, &msg2);
+		MSG_WriteString(print, &msg2);
+	}
 }
 
 void ParseCenterprint(void)
@@ -436,6 +497,11 @@ void ParseCenterprint(void)
 
 	if (options & OPT_VERBOSE) {
 		strcat(buffer, va("Centerprint - %s", text)); // include \n
+	}
+
+	if ((options & OPT_CROP) && demo.recording) {
+		MSG_WriteByte(svc_centerprint, &msg2);
+		MSG_WriteString(text, &msg2);
 	}
 }
 
@@ -449,6 +515,12 @@ void ParseMuzzleFlash(void)
 
 	if (options & OPT_VERBOSE) {
 		strcat(buffer, va("Muzzleflash - (%d) %s\n", effect, MZ_Name(effect)));
+	}
+
+	if ((options & OPT_CROP) && demo.recording) {
+		MSG_WriteByte(svc_muzzleflash, &msg2);
+		MSG_WriteShort(ent, &msg2);
+		MSG_WriteByte(effect, &msg2);
 	}
 }
 
@@ -586,6 +658,11 @@ void ParseStuffText(void)
 	if (options & OPT_VERBOSE) {
 		strcat(buffer, va("StuffText - %s", text)); // included \n
 	}
+
+	if ((options & OPT_CROP) && demo.recording) {
+		MSG_WriteByte(svc_stufftext, &msg2);
+		MSG_WriteString(text, &msg2);
+	}
 }
 
 void ParseLayout(void)
@@ -598,5 +675,10 @@ void ParseLayout(void)
 
 	if (options & OPT_LAYOUTS) {
 		strcat(buffer, ("Layout - %s\n", demo.layout));
+	}
+
+	if ((options & OPT_CROP) && demo.recording) {
+		MSG_WriteByte(svc_layout, &msg2);
+		MSG_WriteString(demo.layout, &msg2);
 	}
 }

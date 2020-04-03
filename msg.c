@@ -1,6 +1,17 @@
 #include "demo.h"
 
 const entity_packed_t   nullEntityState;
+const player_packed_t   nullPlayerState;
+
+static inline int OFFSET2CHAR(float x)
+{
+    return clamp(x, -32, 127.0f / 4) * 4;
+}
+
+static inline int BLEND2BYTE(float x)
+{
+    return clamp(x, 0, 1) * 255;
+}
 
 void MSG_ReadData(void *out, size_t len)
 {
@@ -203,12 +214,18 @@ void MSG_ReadDir(vec3_t dir)
     //dir[2] = (vec_t *) bytedirs[2];
 }
 
-
+// unsigned
 void MSG_WriteByte(byte b, msg_buffer_t *buf)
 {
 	buf->data[buf->index] = b;
 	buf->index++;
 	buf->length++;
+}
+
+// supposed to be signed
+void MSG_WriteChar(byte c, msg_buffer_t *buf)
+{
+	MSG_WriteByte(c, buf);
 }
 
 void MSG_WriteShort(uint16_t s, msg_buffer_t *buf)
@@ -547,5 +564,200 @@ void MSG_WriteDeltaEntity(const entity_packed_t *from,
             MSG_WriteLong(to->solid, buf);
         else
             MSG_WriteShort(to->solid, buf);
+    }
+}
+
+void MSG_PackPlayer(player_packed_t *out, const player_state_t *in)
+{
+    int i;
+
+    out->pmove = in->pmove;
+    out->viewangles[0] = ANGLE2SHORT(in->viewangles[0]);
+    out->viewangles[1] = ANGLE2SHORT(in->viewangles[1]);
+    out->viewangles[2] = ANGLE2SHORT(in->viewangles[2]);
+    out->viewoffset[0] = OFFSET2CHAR(in->viewoffset[0]);
+    out->viewoffset[1] = OFFSET2CHAR(in->viewoffset[1]);
+    out->viewoffset[2] = OFFSET2CHAR(in->viewoffset[2]);
+    out->kick_angles[0] = OFFSET2CHAR(in->kick_angles[0]);
+    out->kick_angles[1] = OFFSET2CHAR(in->kick_angles[1]);
+    out->kick_angles[2] = OFFSET2CHAR(in->kick_angles[2]);
+    out->gunoffset[0] = OFFSET2CHAR(in->gunoffset[0]);
+    out->gunoffset[1] = OFFSET2CHAR(in->gunoffset[1]);
+    out->gunoffset[2] = OFFSET2CHAR(in->gunoffset[2]);
+    out->gunangles[0] = OFFSET2CHAR(in->gunangles[0]);
+    out->gunangles[1] = OFFSET2CHAR(in->gunangles[1]);
+    out->gunangles[2] = OFFSET2CHAR(in->gunangles[2]);
+    out->gunindex = in->gunindex;
+    out->gunframe = in->gunframe;
+    out->blend[0] = BLEND2BYTE(in->blend[0]);
+    out->blend[1] = BLEND2BYTE(in->blend[1]);
+    out->blend[2] = BLEND2BYTE(in->blend[2]);
+    out->blend[3] = BLEND2BYTE(in->blend[3]);
+    out->fov = (int)in->fov;
+    out->rdflags = in->rdflags;
+    for (i = 0; i < MAX_STATS; i++)
+        out->stats[i] = in->stats[i];
+}
+
+void MSG_WriteDeltaPlayerstate_Default(const player_packed_t *from, const player_packed_t *to, msg_buffer_t *buf)
+{
+    int     i;
+    int     pflags;
+    int     statbits;
+
+    if (!to) {}
+        //Com_Error(ERR_DROP, "%s: NULL", __func__);
+
+    if (!from)
+        from = &nullPlayerState;
+
+    //
+    // determine what needs to be sent
+    //
+    pflags = 0;
+
+    if (to->pmove.pm_type != from->pmove.pm_type)
+        pflags |= PS_M_TYPE;
+
+    if (!VectorCompare(to->pmove.origin, from->pmove.origin))
+        pflags |= PS_M_ORIGIN;
+
+    if (!VectorCompare(to->pmove.velocity, from->pmove.velocity))
+        pflags |= PS_M_VELOCITY;
+
+    if (to->pmove.pm_time != from->pmove.pm_time)
+        pflags |= PS_M_TIME;
+
+    if (to->pmove.pm_flags != from->pmove.pm_flags)
+        pflags |= PS_M_FLAGS;
+
+    if (to->pmove.gravity != from->pmove.gravity)
+        pflags |= PS_M_GRAVITY;
+
+    if (!VectorCompare(to->pmove.delta_angles, from->pmove.delta_angles))
+        pflags |= PS_M_DELTA_ANGLES;
+
+    if (!VectorCompare(to->viewoffset, from->viewoffset))
+        pflags |= PS_VIEWOFFSET;
+
+    if (!VectorCompare(to->viewangles, from->viewangles))
+        pflags |= PS_VIEWANGLES;
+
+    if (!VectorCompare(to->kick_angles, from->kick_angles))
+        pflags |= PS_KICKANGLES;
+
+    if (!Vector4Compare(to->blend, from->blend))
+        pflags |= PS_BLEND;
+
+    if (to->fov != from->fov)
+        pflags |= PS_FOV;
+
+    if (to->rdflags != from->rdflags)
+        pflags |= PS_RDFLAGS;
+
+    if (to->gunframe != from->gunframe ||
+        !VectorCompare(to->gunoffset, from->gunoffset) ||
+        !VectorCompare(to->gunangles, from->gunangles))
+        pflags |= PS_WEAPONFRAME;
+
+    if (to->gunindex != from->gunindex)
+        pflags |= PS_WEAPONINDEX;
+
+    //
+    // write it
+    //
+    MSG_WriteShort(pflags, buf);
+
+    //
+    // write the pmove_state_t
+    //
+    if (pflags & PS_M_TYPE)
+        MSG_WriteByte(to->pmove.pm_type, buf);
+
+    if (pflags & PS_M_ORIGIN) {
+        MSG_WriteShort(to->pmove.origin[0], buf);
+        MSG_WriteShort(to->pmove.origin[1], buf);
+        MSG_WriteShort(to->pmove.origin[2], buf);
+    }
+
+    if (pflags & PS_M_VELOCITY) {
+        MSG_WriteShort(to->pmove.velocity[0], buf);
+        MSG_WriteShort(to->pmove.velocity[1], buf);
+        MSG_WriteShort(to->pmove.velocity[2], buf);
+    }
+
+    if (pflags & PS_M_TIME)
+        MSG_WriteByte(to->pmove.pm_time, buf);
+
+    if (pflags & PS_M_FLAGS)
+        MSG_WriteByte(to->pmove.pm_flags, buf);
+
+    if (pflags & PS_M_GRAVITY)
+        MSG_WriteShort(to->pmove.gravity, buf);
+
+    if (pflags & PS_M_DELTA_ANGLES) {
+        MSG_WriteShort(to->pmove.delta_angles[0], buf);
+        MSG_WriteShort(to->pmove.delta_angles[1], buf);
+        MSG_WriteShort(to->pmove.delta_angles[2], buf);
+    }
+
+    //
+    // write the rest of the player_state_t
+    //
+    if (pflags & PS_VIEWOFFSET) {
+        MSG_WriteChar(to->viewoffset[0], buf);
+        MSG_WriteChar(to->viewoffset[1], buf);
+        MSG_WriteChar(to->viewoffset[2], buf);
+    }
+
+    if (pflags & PS_VIEWANGLES) {
+        MSG_WriteShort(to->viewangles[0], buf);
+        MSG_WriteShort(to->viewangles[1], buf);
+        MSG_WriteShort(to->viewangles[2], buf);
+    }
+
+    if (pflags & PS_KICKANGLES) {
+        MSG_WriteChar(to->kick_angles[0], buf);
+        MSG_WriteChar(to->kick_angles[1], buf);
+        MSG_WriteChar(to->kick_angles[2], buf);
+    }
+
+    if (pflags & PS_WEAPONINDEX)
+        MSG_WriteByte(to->gunindex, buf);
+
+    if (pflags & PS_WEAPONFRAME) {
+        MSG_WriteByte(to->gunframe, buf);
+        MSG_WriteChar(to->gunoffset[0], buf);
+        MSG_WriteChar(to->gunoffset[1], buf);
+        MSG_WriteChar(to->gunoffset[2], buf);
+        MSG_WriteChar(to->gunangles[0], buf);
+        MSG_WriteChar(to->gunangles[1], buf);
+        MSG_WriteChar(to->gunangles[2], buf);
+    }
+
+    if (pflags & PS_BLEND) {
+        MSG_WriteByte(to->blend[0], buf);
+        MSG_WriteByte(to->blend[1], buf);
+        MSG_WriteByte(to->blend[2], buf);
+        MSG_WriteByte(to->blend[3], buf);
+    }
+
+    if (pflags & PS_FOV)
+        MSG_WriteByte(to->fov, buf);
+
+    if (pflags & PS_RDFLAGS)
+        MSG_WriteByte(to->rdflags, buf);
+
+    // send stats
+    statbits = 0;
+    for (i = 0; i < MAX_STATS; i++)
+        if (to->stats[i] != from->stats[i])
+            statbits |= 1U << i;
+
+    MSG_WriteLong(statbits, buf);
+    for (i = 0; i < MAX_STATS; i++) {
+        if (statbits & (1U << i)) {
+            MSG_WriteShort(to->stats[i], buf);
+        }
     }
 }

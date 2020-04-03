@@ -30,7 +30,7 @@ void ProcessServerMessage(void)
 		break;
 
 	case svc_playerinfo:
-		ParsePlayerstate(&demo.frames[demo.frame_current].ps);
+		ParsePlayerstate(&demo.current_frame.ps);
 		break;
 
 	case svc_packetentities:
@@ -84,6 +84,7 @@ void ParseDemo(const char *filename)
 
 	// save for later
 	demo.filename = (void *) filename;
+	//demo.delta_frame_number = -1;
 
 	// loop through each chunk of server messages (typically one per server frame)
 	while (1) {

@@ -45,6 +45,8 @@
 
 #define VectorCompare(v1,v2)    ((v1)[0]==(v2)[0]&&(v1)[1]==(v2)[1]&&(v1)[2]==(v2)[2])
 #define CROPFRAME(f)    ((f >= crop_args.start) && (f <= crop_args.end))
+#define clamp(a,b,c)    ((a)<(b)?(a)=(b):(a)>(c)?(a)=(c):(a))
+#define Vector4Compare(v1,v2)    ((v1)[0]==(v2)[0]&&(v1)[1]==(v2)[1]&&(v1)[2]==(v2)[2]&&(v1)[3]==(v2)[3])
 
 typedef unsigned char       byte;
 
@@ -498,18 +500,18 @@ typedef struct {
     uint8_t         clientNum;
 
     // the number of entities sent this frame (SVC_PACKETENTITIES)
-    uint16_t        numEntities;
+    //uint16_t        numEntities;
 
     // maybe remove
-    uint16_t        firstEntity;
+    //uint16_t        firstEntity;
 
     // the SVC_PLAYERINFO sent over with this frame
-    player_state_t  ps;
+    //player_state_t  ps;
 
     // the entire entity blob at this point in time
     // edicts sent over using SVC_PACKETENTITIES this frame
     // are decompressed into this
-    entity_state_t  *entities;
+    //entity_state_t  *entities;
 
     struct configstring_s *cs;
 } serverframe_t;
@@ -536,6 +538,25 @@ typedef struct {
 typedef struct {
 	char string[1024];
 } centerprint_t;
+
+/**
+ * a merged (uncompressed) server frame
+ */
+typedef struct {
+	serverframe_t      frameinfo;
+	player_state_t     ps;
+	player_packed_t    ps_packed;
+	entity_state_t     edicts[MAX_EDICTS];
+	entity_packed_t    edicts_packed[MAX_EDICTS];
+	configstring_t     strings[20];
+	serverprint_t      prints[20];
+	centerprint_t      centerprints[5];
+	snd_params_t       sounds[20];
+	stufftext_t        stuffs[20];
+	tent_params_t      tempents[20];
+	muzzleflash_t      flashes[20];
+	layout_t           layouts[20];
+} frame_t;
 
 /**
  * The entire demo is parsed (decompressed) into this structure. From there
@@ -573,24 +594,15 @@ struct demo_s {
 	char             *filename;
 
 	char             layout[1024];
-};
 
-/**
- * a merged (uncompressed) server frame
- */
-typedef struct {
-	serverframe_t      frameinfo;
-	player_state_t     ps;
-	entity_state_t     edicts[MAX_EDICTS];
-	configstring_t     strings[20];
-	serverprint_t      prints[20];
-	centerprint_t      centerprints[5];
-	snd_params_t       sounds[20];
-	stufftext_t        stuffs[20];
-	tent_params_t      tempents[20];
-	muzzleflash_t      flashes[20];
-	layout_t           layouts[20];
-} frame_t;
+	player_state_t   ps;
+	player_packed_t  last_ps;
+	entity_packed_t  last_ent[MAX_EDICTS];
+	uint32_t         delta_frame_number;
+	uint32_t         frame_number;
+	frame_t          current_frame; // will always contain current merged gamestate
+	frame_t          last_frame;
+};
 
 
 typedef struct {
@@ -678,6 +690,8 @@ void       MSG_WriteString(const char *str, msg_buffer_t *buf);
 void       MSG_WriteData(const void *data, size_t length, msg_buffer_t *buf);
 void       MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, bool short_angles);
 void       MSG_WriteDeltaEntity(const entity_packed_t *from, const entity_packed_t *to, msgEsFlags_t flags, msg_buffer_t *buf);
+void       MSG_WriteDeltaPlayerstate_Default(const player_packed_t *from, const player_packed_t *to, msg_buffer_t *buf);
+void       MSG_PackPlayer(player_packed_t *out, const player_state_t *in);
 
 
 // parsing stuff

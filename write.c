@@ -113,6 +113,8 @@ void StartRecording(char *newdemoname) {
 	MSG_WriteString("precache\n", &msg2);
 
 	WriteBuffer(&msg2);
+
+	memset(&demo.last_frame, 0, sizeof(frame_t));
 }
 
 /**
