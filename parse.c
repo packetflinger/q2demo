@@ -426,45 +426,72 @@ void ParsePacketEntities(void)
 void ParseSound(void)
 {
 	snd_params_t    snd;
-    int flags, channel, entity;
+    //int flags, channel, entity;
 
-    flags = MSG_ReadByte();
+    snd.flags = MSG_ReadByte();
     snd.index = MSG_ReadByte();
 
-    if (flags & SND_VOLUME)
+    if (snd.flags & SND_VOLUME)
         snd.volume = MSG_ReadByte() / 255.0f;
     else
         snd.volume = DEFAULT_SOUND_PACKET_VOLUME;
 
-    if (flags & SND_ATTENUATION)
+    if (snd.flags & SND_ATTENUATION)
         snd.attenuation = MSG_ReadByte() / 64.0f;
     else
         snd.attenuation = DEFAULT_SOUND_PACKET_ATTENUATION;
 
-    if (flags & SND_OFFSET)
+    if (snd.flags & SND_OFFSET)
         snd.timeofs = MSG_ReadByte() / 1000.0f;
     else
         snd.timeofs = 0;
 
-    if (flags & SND_ENT) {
+    if (snd.flags & SND_ENT) {
         // entity relative
-        channel = MSG_ReadShort();
-        entity = channel >> 3;
-        snd.entity = entity;
-        snd.channel = channel & 7;
+        snd.channel = MSG_ReadShort();
+        snd.entity = snd.channel >> 3;
+        snd.channel = snd.channel & 7;
     } else {
         snd.entity = 0;
         snd.channel = 0;
     }
 
     // positioned in space
-    if (flags & SND_POS)
+    if (snd.flags & SND_POS)
         MSG_ReadPos(snd.pos);
 
-    snd.flags = flags;
+    //snd.flags = flags;
 
     if (options & OPT_VERBOSE) {
     	strcat(buffer, "Sound\n");
+    }
+
+    if ((options & OPT_CROP) && demo.recording) {
+    	MSG_WriteByte(svc_sound, &msg2);
+    	MSG_WriteByte(snd.flags, &msg2);
+    	MSG_WriteByte(snd.index, &msg2);
+
+    	if (snd.flags & SND_VOLUME) {
+    		MSG_WriteByte(snd.volume * 255, &msg2);
+    	}
+
+    	if (snd.flags & SND_ATTENUATION) {
+    		MSG_WriteByte(snd.attenuation * 64, &msg2);
+    	}
+
+    	if (snd.flags & SND_OFFSET) {
+    		MSG_WriteByte(snd.timeofs * 1000, &msg2);
+    	}
+
+    	if (snd.flags & SND_ENT) {
+    		MSG_WriteShort(snd.channel + (snd.entity << 3), &msg2);
+    	}
+
+    	if (snd.flags & SND_POS) {
+    		MSG_WriteShort(COORD2SHORT(snd.pos[0]), &msg2);
+    		MSG_WriteShort(COORD2SHORT(snd.pos[1]), &msg2);
+    		MSG_WriteShort(COORD2SHORT(snd.pos[2]), &msg2);
+    	}
     }
 }
 
