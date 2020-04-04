@@ -29,14 +29,6 @@ void ProcessServerMessage(void)
 		ParseFrame(extrabits);
 		break;
 
-	case svc_playerinfo:
-		ParsePlayerstate(&demo.current_frame.ps);
-		break;
-
-	case svc_packetentities:
-		ParsePacketEntities();
-		break;
-
 	case svc_sound:
 		ParseSound();
 		break;

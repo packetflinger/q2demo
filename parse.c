@@ -254,10 +254,27 @@ void ParseFrame(uint32_t extrabits)
 		MSG_WriteData(&fr->areabits, fr->areabytes, &msg2);
 	}
 
+	// playerstate next
+	if (MSG_ReadByte() != svc_playerinfo) {
+		printf("Playerstate not immediately following frame (%d), malformed demo file.", fr->number);
+		exit(EXIT_FAILURE);
+	}
+
+	ParsePlayerstate(&demo.current_frame.ps);
+
+	// packet entities next
+	if (MSG_ReadByte() != svc_packetentities) {
+		printf("Packetentities not immediately following playerstate (frame %d), malformed demo.", fr->number);
+		exit(EXIT_FAILURE);
+	}
+
+	ParsePacketEntities();
+
 	// we hit the end of the crop, stop capturing the demo
 	if ((options & OPT_CROP) && demo.recording && demo.frame_current >= crop_args.end) {
 		EndRecording();
 	}
+
 }
 
 /**
