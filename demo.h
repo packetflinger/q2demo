@@ -40,6 +40,11 @@
 #define ANGLE2SHORT(x)  ((int)((x)*65536/360) & 65535)
 #define SHORT2ANGLE(x)  ((x)*(360.0f/65536))
 
+#define NUMVERTEXNORMALS    162
+#define DotProduct(x,y)         ((x)[0]*(y)[0]+(x)[1]*(y)[1]+(x)[2]*(y)[2])
+#define VectorCopy(a,b)     ((b)[0]=(a)[0],(b)[1]=(a)[1],(b)[2]=(a)[2])
+
+
 // render fx options
 #define RF_FRAMELERP        64
 #define RF_BEAM             128
@@ -613,6 +618,7 @@ typedef struct {
 
 crop_args_t crop_args;
 
+extern const vec3_t bytedirs[NUMVERTEXNORMALS];
 /**
  * Command line arguments options
  */
@@ -693,6 +699,8 @@ void       MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, bool s
 void       MSG_WriteDeltaEntity(const entity_packed_t *from, const entity_packed_t *to, msgEsFlags_t flags, msg_buffer_t *buf);
 void       MSG_WriteDeltaPlayerstate_Default(const player_packed_t *from, const player_packed_t *to, msg_buffer_t *buf);
 void       MSG_PackPlayer(player_packed_t *out, const player_state_t *in);
+void       MSG_WriteDir(const vec3_t dir, msg_buffer_t *buf);
+void       MSG_WritePos(vec3_t pos, msg_buffer_t *buf);
 
 
 // parsing stuff
@@ -727,6 +735,9 @@ size_t     WriteBuffer(msg_buffer_t *in);
 
 // multi-view demo stuff
 void       MVD_ParseServerData(uint32_t extrabits);
+
+// direction
+int        DirToByte(const vec3_t dir);
 
 
 uint32_t opt;

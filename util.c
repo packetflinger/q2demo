@@ -182,7 +182,7 @@ const char *Flash_Name(temp_event_t idx) {
 	}
 }
 
-#define NUMVERTEXNORMALS    162
+
 const vec3_t bytedirs[NUMVERTEXNORMALS] = {
     {-0.525731, 0.000000, 0.850651},
     {-0.442863, 0.238856, 0.864188},
@@ -347,6 +347,28 @@ const vec3_t bytedirs[NUMVERTEXNORMALS] = {
 	{-0.587785, -0.425325, -0.688191},
 	{-0.688191, -0.587785, -0.425325},
 };
+
+int DirToByte(const vec3_t dir)
+{
+    int     i, best;
+    float   d, bestd;
+
+    if (!dir) {
+        return 0;
+    }
+
+    bestd = 0;
+    best = 0;
+    for (i = 0; i < NUMVERTEXNORMALS; i++) {
+        d = DotProduct(dir, bytedirs[i]);
+        if (d > bestd) {
+            bestd = d;
+            best = i;
+        }
+    }
+
+    return best;
+}
 
 /**
  * @brief A shorthand g_snprintf into a statically allocated buffer. Several

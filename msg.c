@@ -206,12 +206,8 @@ void MSG_ParseDeltaEntity(const entity_state_t *from,
 
 void MSG_ReadDir(vec3_t dir)
 {
-    int     b;
-
-    b = MSG_ReadByte();
-    //dir[0] = (vec_t *) bytedirs[0];
-    //dir[1] = (vec_t *) bytedirs[1];
-    //dir[2] = (vec_t *) bytedirs[2];
+    int b = MSG_ReadByte();
+    VectorCopy(bytedirs[b], dir);
 }
 
 // unsigned
@@ -264,6 +260,18 @@ void MSG_WriteData(const void *data, size_t length, msg_buffer_t *buf)
 	for (i=0; i<length; i++) {
 		MSG_WriteByte(((byte *) data)[i], buf);
 	}
+}
+
+void MSG_WriteDir(const vec3_t dir, msg_buffer_t *buf)
+{
+    int best = DirToByte(dir);
+    MSG_WriteByte(best, buf);
+}
+
+void MSG_WritePos(vec3_t pos, msg_buffer_t *buf) {
+	MSG_WriteShort(COORD2SHORT(pos[0]), &msg2);
+	MSG_WriteShort(COORD2SHORT(pos[1]), &msg2);
+	MSG_WriteShort(COORD2SHORT(pos[2]), &msg2);
 }
 
 // write the length of the current chunk into a msg buffer

@@ -675,6 +675,125 @@ void ParseTempEntity(void)
     if (options & OPT_VERBOSE) {
     	strcat(buffer, va("Temporary Entity - (%d) %s\n", te.type, Flash_Name(te.type)));
     }
+
+#if 0
+    if ((options & OPT_CROP) && demo.recording) {
+    	MSG_WriteByte(te.type, &msg2);
+
+		switch (te.type) {
+		case TE_BLOOD:
+		case TE_GUNSHOT:
+		case TE_SPARKS:
+		case TE_BULLET_SPARKS:
+		case TE_SCREEN_SPARKS:
+		case TE_SHIELD_SPARKS:
+		case TE_SHOTGUN:
+		case TE_BLASTER:
+		case TE_GREENBLOOD:
+		case TE_BLASTER2:
+		case TE_FLECHETTE:
+		case TE_HEATBEAM_SPARKS:
+		case TE_HEATBEAM_STEAM:
+		case TE_MOREBLOOD:
+		case TE_ELECTRIC_SPARKS:
+			MSG_WritePos(te.pos1, &msg2);
+			MSG_WriteDir(te.dir, &msg2);
+			break;
+
+		case TE_SPLASH:
+		case TE_LASER_SPARKS:
+		case TE_WELDING_SPARKS:
+		case TE_TUNNEL_SPARKS:
+			MSG_WriteByte(te.count, &msg2);
+			MSG_WritePos(te.pos1, &msg2);
+			MSG_WriteDir(te.dir, &msg2);
+			MSG_WriteByte(te.color, &msg2);
+			break;
+
+		case TE_BLUEHYPERBLASTER:
+		case TE_RAILTRAIL:
+		case TE_BUBBLETRAIL:
+		case TE_DEBUGTRAIL:
+		case TE_BUBBLETRAIL2:
+		case TE_BFG_LASER:
+			MSG_WritePos(te.pos1, &msg2);
+			MSG_WritePos(te.pos2, &msg2);
+			break;
+		case TE_GRENADE_EXPLOSION:
+		case TE_GRENADE_EXPLOSION_WATER:
+		case TE_EXPLOSION2:
+		case TE_PLASMA_EXPLOSION:
+		case TE_ROCKET_EXPLOSION:
+		case TE_ROCKET_EXPLOSION_WATER:
+		case TE_EXPLOSION1:
+		case TE_EXPLOSION1_NP:
+		case TE_EXPLOSION1_BIG:
+		case TE_BFG_EXPLOSION:
+		case TE_BFG_BIGEXPLOSION:
+		case TE_BOSSTPORT:
+		case TE_PLAIN_EXPLOSION:
+		case TE_CHAINFIST_SMOKE:
+		case TE_TRACKER_EXPLOSION:
+		case TE_TELEPORT_EFFECT:
+		case TE_DBALL_GOAL:
+		case TE_WIDOWSPLASH:
+		case TE_NUKEBLAST:
+			MSG_WritePos(te.pos1, &msg2);
+			break;
+
+		case TE_PARASITE_ATTACK:
+		case TE_MEDIC_CABLE_ATTACK:
+		case TE_HEATBEAM:
+		case TE_MONSTER_HEATBEAM:
+			MSG_WriteShort(te.entity1, &msg2);
+			MSG_WritePos(te.pos1, &msg2);
+			MSG_WritePos(te.pos2, &msg2);
+			break;
+
+		case TE_GRAPPLE_CABLE:
+			MSG_WriteShort(te.entity1, &msg2);
+			MSG_WritePos(te.pos1, &msg2);
+			MSG_WritePos(te.pos2, &msg2);
+			MSG_WritePos(te.offset, &msg2);
+			break;
+
+		case TE_LIGHTNING:
+			MSG_WriteShort(te.entity1, &msg2);
+			MSG_WriteShort(te.entity2, &msg2);
+			MSG_WritePos(te.pos1, &msg2);
+			MSG_WritePos(te.pos2, &msg2);
+			break;
+
+		case TE_FLASHLIGHT:
+			MSG_WritePos(te.pos1, &msg2);
+			MSG_WriteShort(te.entity1, &msg2);
+			break;
+		case TE_FORCEWALL:
+			MSG_WritePos(te.pos1, &msg2);
+			MSG_WritePos(te.pos2, &msg2);
+			MSG_WriteByte(te.color, &msg2);
+			break;
+
+		case TE_STEAM:
+			MSG_WriteShort(te.entity1, &msg2);
+			MSG_WriteByte(te.count, &msg2);
+			MSG_WritePos(te.pos1, &msg2);
+			MSG_WriteDir(te.dir, &msg2);
+			MSG_WriteByte(te.color, &msg2);
+			MSG_WriteShort(te.entity2, &msg2);
+			if (te.entity1 != -1) {
+				MSG_WriteLong(te.time, &msg2);
+			}
+			break;
+
+		case TE_WIDOWBEAMOUT:
+			MSG_WriteShort(te.entity1, &msg2);
+			MSG_WritePos(te.pos1, &msg2);
+			break;
+		}
+
+    }
+#endif
 }
 
 void ParseStuffText(void)
