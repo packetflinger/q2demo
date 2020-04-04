@@ -54,6 +54,13 @@
 #define clamp(a,b,c)    ((a)<(b)?(a)=(b):(a)>(c)?(a)=(c):(a))
 #define Vector4Compare(v1,v2)    ((v1)[0]==(v2)[0]&&(v1)[1]==(v2)[1]&&(v1)[2]==(v2)[2]&&(v1)[3]==(v2)[3])
 
+// print types
+#define PRINT_LOW           0       // pickup messages
+#define PRINT_MEDIUM        1       // death messages
+#define PRINT_HIGH          2       // critical messages
+#define PRINT_CHAT          3       // chat messages
+
+#define CREDIT_FRAME        20      // the frame to spam credit msg
 typedef unsigned char       byte;
 
 typedef float               vec_t;
@@ -727,7 +734,7 @@ void       WriteDemoFile(const char *filename);
 char       *va(const char *format, ...);
 const char *MZ_Name(uint32_t idx);
 const char *Flash_Name(temp_event_t idx);
-
+void       InsertCredits(void);
 // writing
 void       StartRecording(char *newdemoname);
 void       EndRecording(void);

@@ -58,6 +58,12 @@ void ProcessServerMessage(void)
 		ParseLayout();
 		break;
 	}
+
+	if ((options & OPT_CROP) && demo.recording) {
+		if (demo.current_frame.frameinfo.number - crop_args.start == CREDIT_FRAME) {
+			InsertCredits();
+		}
+	}
 }
 
 /**

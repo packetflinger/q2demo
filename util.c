@@ -425,3 +425,9 @@ int Q_stricmp (const char *s1, const char *s2)
 }
 #endif
 
+void InsertCredits(void) {
+	MSG_WriteByte(svc_print, &msg2);
+	MSG_WriteByte(PRINT_LOW, &msg2);
+	MSG_WriteString("https://packetflinger.com/q2demo\n", &msg2);
+}
+
