@@ -38,6 +38,7 @@
 #define ANGLE2BYTE(x)   ((int)((x)*256.0f/360)&255)
 #define BYTE2ANGLE(x)   ((x)*(360.0f/256))
 #define ANGLE2SHORT(x)  ((int)((x)*65536/360) & 65535)
+#define SHORT2ANGLE(x)  ((x)*(360.0f/65536))
 
 // render fx options
 #define RF_FRAMELERP        64

@@ -239,7 +239,7 @@ void ParseFrame(uint32_t extrabits)
 		StartRecording(va("%s-1", demo.filename));
 	}
 
-	// being 0 would mean this is the first frame, if so, we're not delta-ing, so set previous to -1
+	// being 0 would mean this is the first frame, if so, this frame is uncompressed, so set previous to -1
 	if (last_fr->number == 0) {
 		last_fr->number = -1;
 	}

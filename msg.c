@@ -82,7 +82,7 @@ uint8_t MSG_ReadAngle(void)
 
 uint16_t MSG_ReadAngle16(void)
 {
-	return MSG_ReadShort();
+	return SHORT2ANGLE(MSG_ReadShort());
 }
 
 uint16_t MSG_ReadCoord(void)
