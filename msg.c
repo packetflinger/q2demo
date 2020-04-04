@@ -77,7 +77,7 @@ char *MSG_ReadString(void)
 
 uint8_t MSG_ReadAngle(void)
 {
-	return MSG_ReadByte();
+	return BYTE2ANGLE(MSG_ReadByte());
 }
 
 uint16_t MSG_ReadAngle16(void)
@@ -87,7 +87,7 @@ uint16_t MSG_ReadAngle16(void)
 
 uint16_t MSG_ReadCoord(void)
 {
-	return MSG_ReadShort();
+	return SHORT2COORD(MSG_ReadShort());
 }
 
 void MSG_ReadPos(vec3_t pos)
