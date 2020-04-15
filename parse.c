@@ -203,8 +203,8 @@ void ParseBaseline(int index, int bits)
 
 void ParseFrame(uint32_t extrabits)
 {
-	serverframe_t *fr = &demo.current_frame.frameinfo;
-	serverframe_t *last_fr = &demo.last_frame.frameinfo;
+	frame_t *to, *from;
+	int32_t fnum, dnum, suppressed;
 
 	demo.frame_number++;
 
@@ -213,230 +213,368 @@ void ParseFrame(uint32_t extrabits)
 		WriteBuffer(&msg2);
 	}
 
-	// move previous current frame to last frame and this frame becomes current
-	memset(&demo.last_frame, 0, sizeof(frame_t));
-	memcpy(&demo.last_frame, &demo.current_frame, sizeof(frame_t));
+	fnum = MSG_ReadLong();  // frame
+	dnum = MSG_ReadLong();  // delta
 
-	// don't use these values, frame number will be reset to zero, but we still
-	// need to parse them anyway
-	MSG_ReadLong();  // frame
-	MSG_ReadLong();  // delta
+	to = &demo.frames[fnum & FRAME_MASK];
+	from = &demo.frames[dnum & FRAME_MASK];
 
-	fr->number = demo.frame_number;
-	fr->delta = demo.delta_frame_number;
-	fr->suppressed = MSG_ReadByte();
-	fr->areabytes = MSG_ReadByte();
-	MSG_ReadData(&fr->areabits, fr->areabytes);
+	// copy previous frame to current to build on
+	memcpy(to, from, sizeof(frame_t));
 
-	demo.frame_current = fr->number;
+	to->framenum = demo.frame_number;
+	suppressed = MSG_ReadByte(); // we don't care about suppressed frames
+	to->areabytes = MSG_ReadByte();
+	MSG_ReadData(&to->areabits, to->areabytes);
+
+	demo.frame_current = to->framenum;
 
 	if ((options & OPT_VERBOSE) || (options & OPT_FRAMES)) {
-		strcat(buffer, va("Frame [%d]\n", fr->number));
+		strcat(buffer, va("Frame [%d]\n", to->framenum));
 	}
 
 	// start new demo file
-	if ((options & OPT_CROP) && CROPFRAME(fr->number) && !demo.recording) {
+	if ((options & OPT_CROP) && CROPFRAME(to->framenum) && !demo.recording) {
 		StartRecording(va("%s-1", demo.filename));
 	}
 
-	// being 0 would mean this is the first frame, if so, this frame is uncompressed, so set previous to -1
-	if (last_fr->number == 0) {
-		last_fr->number = -1;
+	// being 0 would mean this is the first frame,
+	// if so, this frame is uncompressed, so set previous to -1
+	if (from->framenum == 0) {
+		from->framenum = -1;
 	}
 
 	if ((options & OPT_CROP) && demo.recording) {
 		// emit frame to demo file
 		MSG_WriteByte(svc_frame, &msg2);
-		MSG_WriteLong(fr->number, &msg2);
-		MSG_WriteLong(last_fr->number, &msg2);
+		MSG_WriteLong(to->framenum, &msg2);
+		MSG_WriteLong(from->framenum, &msg2);
 		MSG_WriteByte(0, &msg2);
-		MSG_WriteByte(fr->areabytes, &msg2);
-		MSG_WriteData(&fr->areabits, fr->areabytes, &msg2);
+		MSG_WriteByte(to->areabytes, &msg2);
+		MSG_WriteData(&to->areabits, to->areabytes, &msg2);
 	}
 
 	// playerstate next
 	if (MSG_ReadByte() != svc_playerinfo) {
-		printf("Playerstate not immediately following frame (%d), malformed demo file.", fr->number);
+		printf("Playerstate not immediately following frame (%d), malformed demo file.", to->framenum);
 		exit(EXIT_FAILURE);
 	}
 
-	ParsePlayerstate(&demo.current_frame.ps);
+	if (from->framenum > 0) {
+		ParsePlayerstate(&to->ps, &from->ps);
+	} else {
+		ParsePlayerstate(&to->ps, NULL);
+	}
+
 
 	// packet entities next
 	if (MSG_ReadByte() != svc_packetentities) {
-		printf("Packetentities not immediately following playerstate (frame %d), malformed demo.", fr->number);
+		printf("Packetentities not immediately following playerstate (frame %d), malformed demo.", to->framenum);
 		exit(EXIT_FAILURE);
 	}
 
-	ParsePacketEntities();
+	ParsePacketEntities(to, from);
 
 	// we hit the end of the crop, stop capturing the demo
 	if ((options & OPT_CROP) && demo.recording && demo.frame_current >= crop_args.end) {
 		EndRecording();
 	}
-
 }
 
 /**
  * Read and unpack the current playerstate
  */
-void ParsePlayerstate(player_state_t *ps)
+void ParsePlayerstate(player_state_t *to, player_state_t *from)
 {
 	uint32_t bits;
 	int i, statbits;
-	player_packed_t from = demo.last_frame.ps_packed;
-	player_packed_t *to = &demo.current_frame.ps_packed;
+	player_packed_t to_p, from_p;
+	//player_packed_t from = demo.last_frame.ps_packed;
+	//player_packed_t *to = &demo.current_frame.ps_packed;
 
 	bits = MSG_ReadWord();
 
 	if (bits & PS_M_TYPE)
-		ps->pmove.pm_type = MSG_ReadByte();
+		to->pmove.pm_type = MSG_ReadByte();
 
     if (bits & PS_M_ORIGIN) {
-        ps->pmove.origin[0] = MSG_ReadShort();
-        ps->pmove.origin[1] = MSG_ReadShort();
-        ps->pmove.origin[2] = MSG_ReadShort();
+        to->pmove.origin[0] = MSG_ReadShort();
+        to->pmove.origin[1] = MSG_ReadShort();
+        to->pmove.origin[2] = MSG_ReadShort();
     }
 
     if (bits & PS_M_VELOCITY) {
-        ps->pmove.velocity[0] = MSG_ReadShort();
-        ps->pmove.velocity[1] = MSG_ReadShort();
-        ps->pmove.velocity[2] = MSG_ReadShort();
+        to->pmove.velocity[0] = MSG_ReadShort();
+        to->pmove.velocity[1] = MSG_ReadShort();
+        to->pmove.velocity[2] = MSG_ReadShort();
     }
 
     if (bits & PS_M_TIME)
-        ps->pmove.pm_time = MSG_ReadByte();
+        to->pmove.pm_time = MSG_ReadByte();
 
     if (bits & PS_M_FLAGS)
-        ps->pmove.pm_flags = MSG_ReadByte();
+        to->pmove.pm_flags = MSG_ReadByte();
 
     if (bits & PS_M_GRAVITY)
-        ps->pmove.gravity = MSG_ReadShort();
+        to->pmove.gravity = MSG_ReadShort();
 
     if (bits & PS_M_DELTA_ANGLES) {
-        ps->pmove.delta_angles[0] = MSG_ReadShort();
-        ps->pmove.delta_angles[1] = MSG_ReadShort();
-        ps->pmove.delta_angles[2] = MSG_ReadShort();
+        to->pmove.delta_angles[0] = MSG_ReadShort();
+        to->pmove.delta_angles[1] = MSG_ReadShort();
+        to->pmove.delta_angles[2] = MSG_ReadShort();
     }
 
     if (bits & PS_VIEWOFFSET) {
-		ps->viewoffset[0] = MSG_ReadChar() * 0.25f;
-		ps->viewoffset[1] = MSG_ReadChar() * 0.25f;
-		ps->viewoffset[2] = MSG_ReadChar() * 0.25f;
+		to->viewoffset[0] = MSG_ReadChar() * 0.25f;
+		to->viewoffset[1] = MSG_ReadChar() * 0.25f;
+		to->viewoffset[2] = MSG_ReadChar() * 0.25f;
 	}
 
 	if (bits & PS_VIEWANGLES) {
-		ps->viewangles[0] = MSG_ReadAngle16();
-		ps->viewangles[1] = MSG_ReadAngle16();
-		ps->viewangles[2] = MSG_ReadAngle16();
+		to->viewangles[0] = MSG_ReadAngle16();
+		to->viewangles[1] = MSG_ReadAngle16();
+		to->viewangles[2] = MSG_ReadAngle16();
 	}
 
 	if (bits & PS_KICKANGLES) {
-		ps->kick_angles[0] = MSG_ReadChar() * 0.25f;
-		ps->kick_angles[1] = MSG_ReadChar() * 0.25f;
-		ps->kick_angles[2] = MSG_ReadChar() * 0.25f;
+		to->kick_angles[0] = MSG_ReadChar() * 0.25f;
+		to->kick_angles[1] = MSG_ReadChar() * 0.25f;
+		to->kick_angles[2] = MSG_ReadChar() * 0.25f;
 	}
 
 	if (bits & PS_WEAPONINDEX) {
-		ps->gunindex = MSG_ReadByte();
+		to->gunindex = MSG_ReadByte();
 	}
 
 	if (bits & PS_WEAPONFRAME) {
-		ps->gunframe = MSG_ReadByte();
-		ps->gunoffset[0] = MSG_ReadChar() * 0.25f;
-		ps->gunoffset[1] = MSG_ReadChar() * 0.25f;
-		ps->gunoffset[2] = MSG_ReadChar() * 0.25f;
-		ps->gunangles[0] = MSG_ReadChar() * 0.25f;
-		ps->gunangles[1] = MSG_ReadChar() * 0.25f;
-		ps->gunangles[2] = MSG_ReadChar() * 0.25f;
+		to->gunframe = MSG_ReadByte();
+		to->gunoffset[0] = MSG_ReadChar() * 0.25f;
+		to->gunoffset[1] = MSG_ReadChar() * 0.25f;
+		to->gunoffset[2] = MSG_ReadChar() * 0.25f;
+		to->gunangles[0] = MSG_ReadChar() * 0.25f;
+		to->gunangles[1] = MSG_ReadChar() * 0.25f;
+		to->gunangles[2] = MSG_ReadChar() * 0.25f;
 	}
 
 	if (bits & PS_BLEND) {
-		ps->blend[0] = MSG_ReadByte() / 255.0f;
-		ps->blend[1] = MSG_ReadByte() / 255.0f;
-		ps->blend[2] = MSG_ReadByte() / 255.0f;
-		ps->blend[3] = MSG_ReadByte() / 255.0f;
+		to->blend[0] = MSG_ReadByte() / 255.0f;
+		to->blend[1] = MSG_ReadByte() / 255.0f;
+		to->blend[2] = MSG_ReadByte() / 255.0f;
+		to->blend[3] = MSG_ReadByte() / 255.0f;
 	}
 
     if (bits & PS_FOV)
-        ps->fov = MSG_ReadByte();
+        to->fov = MSG_ReadByte();
 
     if (bits & PS_RDFLAGS)
-        ps->rdflags = MSG_ReadByte();
+        to->rdflags = MSG_ReadByte();
 
     statbits = MSG_ReadLong();
     for (i = 0; i < MAX_STATS; i++) {
         if (statbits & (1U << i)) {
-            ps->stats[i] = MSG_ReadShort();
+            to->stats[i] = MSG_ReadShort();
         }
     }
 
     // pack the current playerstate for later comparison
-    MSG_PackPlayer(to, ps);
+    MSG_PackPlayer(&to_p, to);
 
     if (options & OPT_VERBOSE) {
     	strcat(buffer, "PlayerState\n");
     }
 
     if ((options & OPT_CROP) && demo.recording) {
+    	MSG_PackPlayer(&from_p, from);
     	MSG_WriteByte(svc_playerinfo, &msg2);
-    	MSG_WriteDeltaPlayerstate_Default(&from, to, &msg2);
+    	MSG_WriteDeltaPlayerstate_Default(&from_p, &to_p, &msg2);
     }
 }
 
-void ParsePacketEntities(void)
+void ParsePacketEntities(frame_t *to_frame, frame_t *from_frame)
 {
 	static uint32_t bits;
 	static uint16_t num;
-	//static entity_state_t tempstate;
-
-	entity_state_t *from;
-	entity_state_t *to;
-
-	entity_packed_t *from_p;
-	entity_packed_t *to_p;
+	uint32_t i, j, new_found, old_found, newnum, oldnum, newindex, oldindex, from_num_entities;
+	entity_state_t *to, *from, *oldent, *newent;
+	entity_packed_t *to_p, *from_p, oldpack, newpack;
 
 	if (options & OPT_VERBOSE) {
 		strcat(buffer, "PacketEntities - ");
-	}
-
-	// all entities are grouped in a single block
-	if ((options & OPT_CROP) && demo.recording) {
-		MSG_WriteByte(svc_packetentities, &msg2);
 	}
 
 	while (true) {
 		bits = ParseEntityBitmask();
 		num = ParseEntityNumber(bits);
 
-		from = &demo.last_frame.edicts[num];
-		to = &demo.current_frame.edicts[num];
-
-		from_p = &demo.last_frame.edicts_packed[num];
-		to_p = &demo.current_frame.edicts_packed[num];
+		from = &from_frame->edicts[num];
+		to = &to_frame->edicts[num];
 
 		if (num <= 0) {
 			break;
 		}
 
-		MSG_ParseDeltaEntity(from, to, num, bits, 0);
-		MSG_PackEntity(to_p, to, 0);
+		if (from_frame->framenum == -1) {
+			MSG_ParseDeltaEntity(NULL, to, num, bits, 0);
+		} else {
+			MSG_ParseDeltaEntity(from, to, num, bits, 0);
+		}
+
+		to_frame->edict_count++;
+
+		// copy the newly merged entity back to the gamestate
+		memcpy(&demo.gamestate[num], to, sizeof(entity_state_t));
 
 		if (options & OPT_VERBOSE) {
 			strcat(buffer, va("%d ", num));
 		}
-
-		if ((options & OPT_CROP) && demo.recording) {
-			MSG_WriteDeltaEntity(from_p, to_p, 0, &msg2);
-		}
-	}
-
-	if ((options & OPT_CROP) && demo.recording) {
-		MSG_WriteShort(0, &msg2);
 	}
 
 	if (options & OPT_VERBOSE) {
 		strcat(buffer, "\n");
+	}
+
+	if ((options & OPT_CROP) && demo.recording) {
+		MSG_WriteByte(svc_packetentities, &msg2);
+
+		// entities in from frame but not in to frame (remove them)
+		from_num_entities = (!from) ? 0 : from_frame->edict_count;
+
+		for (i=1, old_found=0; old_found<=from_num_entities; i++) {
+			if (i >= MAX_EDICTS) {
+				break;
+			}
+			oldent = &from_frame->edicts[i];
+			newent = &to_frame->edicts[i];
+
+			if (oldent && oldent->number) {
+				old_found++;
+				if (newent && newent->number == 0) {
+					MSG_PackEntity(&oldpack, oldent, false);
+					MSG_WriteDeltaEntity(&oldpack, NULL, MSG_ES_FORCE, &msg2);
+					printf("remove - frame: %d, oldent: %d, newent: %d\n", to_frame->framenum, oldent->number, newent->number);
+				}
+			}
+		}
+
+		// new entities (ones in to frame but not in from frame) delta from baseline
+		for (i=1, new_found=0; new_found<=to_frame->edict_count; i++) {
+			if (i >= MAX_EDICTS) {
+				break;
+			}
+
+			oldent = &from_frame->edicts[i];
+			newent = &to_frame->edicts[i];
+
+			// found one
+			if (newent && newent->number == i) {
+				new_found++;
+				if (oldent && oldent->number == 0) {
+					MSG_PackEntity(&oldpack, &demo.baselines[i], false);
+					MSG_PackEntity(&newpack, newent, false);
+					MSG_WriteDeltaEntity(&newpack, &oldpack, MSG_ES_FORCE | MSG_ES_NEWENTITY, &msg2);
+					printf("add from baseline - frame: %d, oldent: %d, newent: %d\n", to_frame->framenum, oldent->number, newent->number);
+				}
+			}
+
+		}
+
+		// both found, compress against each other
+		for (i=1, new_found=0; new_found<=to_frame->edict_count; i++) {
+			if (i >= MAX_EDICTS) {
+				break;
+			}
+			oldent = &from_frame->edicts[i];
+			newent = &to_frame->edicts[i];
+
+			if (newent && newent->number == i) {
+				new_found++;
+				if (oldent && oldent->number == i) {
+					MSG_PackEntity(&oldpack, oldent, false);
+					MSG_PackEntity(&newpack, newent, false);
+					MSG_WriteDeltaEntity(&oldpack, &newpack,
+										 newent->number <= atoi(demo.configstrings[CS_MAXCLIENTS].string) ? MSG_ES_NEWENTITY : 0, &msg2);
+					printf("from previous - frame: %d, oldent: %d, newent: %d\n", to_frame->framenum, oldent->number, newent->number);
+				}
+			}
+		}
+/*
+		if (!from)
+			from_num_entities = 0;
+		else
+			from_num_entities = from_frame->edict_count;
+
+		newindex = 0;
+		oldindex = 0;
+		oldent = newent = NULL;
+		while (newindex < to_frame->edict_count || oldindex < from_num_entities) {
+			if (newindex >= to_frame->edict_count) {
+				newnum = 9999;
+			} else {
+				//i = (to->firstEntity + newindex) & PARSE_ENTITIES_MASK;
+				// get the next edict in the frame
+				i = newindex;
+				while (to_frame->edicts[i].number != i && i < to_frame->edict_count) {
+					i++;
+				}
+
+				//newindex = i; // remove later
+				newent = &demo.gamestate[i];
+				newnum = newent->number;
+			}
+
+			if (oldindex >= from_num_entities) {
+				oldnum = 9999;
+			} else {
+				//i = (from->firstEntity + oldindex) & PARSE_ENTITIES_MASK;
+				i = oldindex;
+				while (!from_frame->edicts[i].number != i && i < from_frame->edict_count) {
+					i++;
+				}
+				oldent = &demo.gamestate[i];
+				oldnum = oldent->number;
+			}
+
+			printf("new index: %d, old index: %d\n", newnum, oldnum);
+*/
+
+		/*
+
+			if (newnum == oldnum) {
+				// Delta update from old position. Because the force parm is false,
+				// this will not result in any bytes being emitted if the entity has
+				// not changed at all. Note that players are always 'newentities',
+				// this updates their old_origin always and prevents warping in case
+				// of packet loss.
+				MSG_PackEntity(&oldpack, oldent, false);
+				MSG_PackEntity(&newpack, newent, false);
+				MSG_WriteDeltaEntity(&oldpack, &newpack,
+									 newent->number <= atoi(demo.configstrings[CS_MAXCLIENTS].string) ? MSG_ES_NEWENTITY : 0, &msg2);
+				oldindex++;
+				newindex++;
+				continue;
+			}
+
+			if (newnum < oldnum) {
+				// this is a new entity, send it from the baseline
+				MSG_PackEntity(&oldpack, &demo.baselines[newnum], false);
+				MSG_PackEntity(&newpack, newent, false);
+				MSG_WriteDeltaEntity(&oldpack, &newpack, MSG_ES_FORCE | MSG_ES_NEWENTITY, &msg2);
+				newindex++;
+				continue;
+			}
+
+			if (newnum > oldnum) {
+				// the old entity isn't present in the new message
+				MSG_PackEntity(&oldpack, oldent, false);
+				MSG_WriteDeltaEntity(&oldpack, NULL, MSG_ES_FORCE, &msg2);
+				oldindex++;
+				continue;
+			}
+
+			*/
+		//}
+
+		MSG_WriteShort(0, &msg2);
 	}
 }
 
@@ -693,8 +831,8 @@ void ParseTempEntity(void)
     	strcat(buffer, va("Temporary Entity - (%d) %s\n", te.type, Flash_Name(te.type)));
     }
 
-#if 0
     if ((options & OPT_CROP) && demo.recording) {
+    	MSG_WriteByte(svc_temp_entity, &msg2);
     	MSG_WriteByte(te.type, &msg2);
 
 		switch (te.type) {
@@ -808,9 +946,7 @@ void ParseTempEntity(void)
 			MSG_WritePos(te.pos1, &msg2);
 			break;
 		}
-
     }
-#endif
 }
 
 void ParseStuffText(void)

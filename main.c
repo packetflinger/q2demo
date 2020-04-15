@@ -60,7 +60,7 @@ void ProcessServerMessage(void)
 	}
 
 	if ((options & OPT_CROP) && demo.recording) {
-		if (demo.current_frame.frameinfo.number - crop_args.start == CREDIT_FRAME) {
+		if (demo.frame_number - crop_args.start == CREDIT_FRAME) {
 			InsertCredits();
 		}
 	}
@@ -82,10 +82,9 @@ void ParseDemo(const char *filename)
 
 	// save for later
 	demo.filename = (void *) filename;
-	//demo.delta_frame_number = -1;
 
 	// loop through each chunk of server messages (typically one per server frame)
-	while (1) {
+	while (true) {
 		memset(&msg, 0, sizeof(msg_buffer_t));
 		memset(&buffer, 0, sizeof(buffer));
 

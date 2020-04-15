@@ -17,12 +17,45 @@
 
 #define MVD_MAGIC 			(((unsigned)('2')<<24)|(('D')<<16)|(('V')<<8)|('M'))
 
-#define MAX_CLIENTS         256
-#define MAX_CONFIGSTRINGS   2080
+#define FRAME_COUNT         4
+#define FRAME_MASK          (FRAME_COUNT - 1)
+#define CS_NAME             0
+#define CS_CDTRACK          1
+#define CS_SKY              2
+#define CS_SKYAXIS          3       // %f %f %f format
+#define CS_SKYROTATE        4
+#define CS_STATUSBAR        5       // display program string
+
+#define CS_AIRACCEL         29      // air acceleration control
+#define CS_MAXCLIENTS       30
+#define CS_MAPCHECKSUM      31      // for catching cheater maps
+
+#define CS_MODELS           32
+#define CS_SOUNDS           (CS_MODELS+MAX_MODELS)
+#define CS_IMAGES           (CS_SOUNDS+MAX_SOUNDS)
+#define CS_LIGHTS           (CS_IMAGES+MAX_IMAGES)
+#define CS_ITEMS            (CS_LIGHTS+MAX_LIGHTSTYLES)
+#define CS_PLAYERSKINS      (CS_ITEMS+MAX_ITEMS)
+#define CS_GENERAL          (CS_PLAYERSKINS+MAX_CLIENTS)
+#define MAX_CONFIGSTRINGS   (CS_GENERAL+MAX_GENERAL)
+
+#define MAX_CLIENTS         256     // absolute limit
+#define MAX_EDICTS          1024    // must change protocol to increase more
+#define MAX_LIGHTSTYLES     256
+#define MAX_MODELS          256     // these are sent over the net as bytes
+#define MAX_SOUNDS          256     // so they cannot be blindly increased
+#define MAX_IMAGES          256
+#define MAX_ITEMS           256
+#define MAX_GENERAL         (MAX_CLIENTS * 2) // general config strings
+
+#define MAX_CLIENT_NAME     16
+
+//#define MAX_CLIENTS         256
+//#define MAX_CONFIGSTRINGS   2080
 #define MAX_CFGSTR_CHARS    1024
 #define MAX_STRING_CHARS    2048
 #define MSGLEN              4
-#define MAX_EDICTS          1024
+//#define MAX_EDICTS          1024
 #define MAX_STATS           32
 #define MAX_MAP_AREAS       256
 #define MAX_MAP_AREA_BYTES  (MAX_MAP_AREAS / 8)
@@ -143,8 +176,8 @@ typedef enum {
 #define PS_M_FLAGS          (1<<4)
 #define PS_M_GRAVITY        (1<<5)
 #define PS_M_DELTA_ANGLES   (1<<6)
-
 #define PS_VIEWOFFSET       (1<<7)
+
 #define PS_VIEWANGLES       (1<<8)
 #define PS_KICKANGLES       (1<<9)
 #define PS_BLEND            (1<<10)
@@ -556,11 +589,19 @@ typedef struct {
  * a merged (uncompressed) server frame
  */
 typedef struct {
-	serverframe_t      frameinfo;
+	//serverframe_t      frameinfo;
+
+	uint32_t           framenum;
+	//uint32_t           deltanum;
+	int32_t            areabytes;
+	uint32_t           areabits;
+
 	player_state_t     ps;
-	player_packed_t    ps_packed;
+	//player_packed_t    ps_packed;
 	entity_state_t     edicts[MAX_EDICTS];
-	entity_packed_t    edicts_packed[MAX_EDICTS];
+	size_t             edict_count;
+	//entity_packed_t    edicts_packed[MAX_EDICTS];
+	/*
 	configstring_t     strings[20];
 	serverprint_t      prints[20];
 	centerprint_t      centerprints[5];
@@ -569,6 +610,7 @@ typedef struct {
 	tent_params_t      tempents[20];
 	muzzleflash_t      flashes[20];
 	layout_t           layouts[20];
+	*/
 } frame_t;
 
 /**
@@ -589,10 +631,10 @@ struct demo_s {
 	entity_state_t   baselines[MAX_EDICTS];
 
 	// cumulatively merged edicts at a certain point in time
-	entity_state_t   ents_merged[MAX_EDICTS];
+	entity_state_t   gamestate[MAX_EDICTS];
 
 	// one of these for each 0.1 second
-	serverframe_t    frames[0xffff];
+	//serverframe_t    frames[0xffff];
 
 	// the number of frames we have
 	uint32_t         frame_count;
@@ -608,13 +650,14 @@ struct demo_s {
 
 	char             layout[1024];
 
-	player_state_t   ps;
-	player_packed_t  last_ps;
-	entity_packed_t  last_ent[MAX_EDICTS];
-	uint32_t         delta_frame_number;
+	//player_state_t   ps;
+	//player_packed_t  last_ps;
+	//entity_packed_t  last_ent[MAX_EDICTS];
+	//uint32_t         delta_frame_number;
 	uint32_t         frame_number;
-	frame_t          current_frame; // will always contain current merged gamestate
-	frame_t          last_frame;
+	//frame_t          current_frame; // will always contain current merged gamestate
+	//frame_t          last_frame;
+	frame_t          frames[4];
 };
 
 
@@ -717,8 +760,8 @@ uint16_t   ParseEntityNumber(uint32_t bitmask);
 uint32_t   ParseEntityBitmask(void);
 void       ParseBaseline(int index, int bits);
 void       ParseFrame(uint32_t extrabits);
-void       ParsePlayerstate(player_state_t *ps);
-void       ParsePacketEntities(void);
+void       ParsePlayerstate(player_state_t *to, player_state_t *from);
+void       ParsePacketEntities(frame_t *to_frame, frame_t *from_frame);
 void       ParseSound(void);
 void       ParsePrint(void);
 void       ParseCenterprint(void);

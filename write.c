@@ -114,7 +114,7 @@ void StartRecording(char *newdemoname) {
 
 	WriteBuffer(&msg2);
 
-	memset(&demo.last_frame, 0, sizeof(frame_t));
+	//memset(&demo.frames, 0, sizeof(demo.frames));
 }
 
 /**
