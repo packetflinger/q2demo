@@ -47,7 +47,8 @@ int ParseArgs(uint32_t argc, char **argv)
 		}
 	}
 
-	if ((options & OPT_USAGE) || argc == 1) {
+
+	if ((options & OPT_USAGE) || argc <= 2) {
 		printf("Usage: %s [args] <demofilename> [demofilename...]\n", argv[0]);
 		printf("Args:\n");
 		printf("  -c (output configstrings)\n");
@@ -659,6 +660,10 @@ void ParsePrint(void)
 
 	if (options & OPT_VERBOSE) {
 		strcat(buffer, va("Print - %s", print)); // includes \n
+	}
+
+	if (options & OPT_PRINTS) {
+	    strcat(buffer, va("%s ", demo.configstrings[1572].string));
 	}
 
 	if (options & OPT_PRINTS) {
