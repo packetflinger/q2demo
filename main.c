@@ -1,5 +1,19 @@
 #include "demo.h"
 
+msg_buffer_t msg;    // for reading existing demo file
+msg_buffer_t msg2;   // for writing new demo files
+char buffer[0xffff];
+entity_state_t baselines[MAX_EDICTS];
+crop_args_t crop_args;
+uint32_t opt;
+uint32_t options;
+struct demo_s demo;
+
+FILE *outfile;
+configstring_t cs_merged[MAX_CONFIGSTRINGS];
+configstring_t cs_initial[MAX_CONFIGSTRINGS];
+entity_state_t ents_merged[MAX_EDICTS];
+entity_state_t baselines[MAX_EDICTS];
 
 void ProcessServerMessage(void)
 {

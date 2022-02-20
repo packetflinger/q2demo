@@ -106,10 +106,10 @@ typedef struct {
 	byte           data[0xffff];
 } msg_buffer_t;
 
-msg_buffer_t msg;    // for reading existing demo file
-msg_buffer_t msg2;   // for writing new demo files
+extern msg_buffer_t msg;    // for reading existing demo file
+extern msg_buffer_t msg2;   // for writing new demo files
 
-char buffer[0xffff];
+extern char buffer[0xffff];
 
 typedef enum {
     MSG_PS_IGNORE_GUNINDEX      = (1 << 0),
@@ -411,7 +411,7 @@ typedef struct entity_state_s {
                             // are automatically cleared each frame
 } entity_state_t;
 
-entity_state_t baselines[MAX_EDICTS];
+extern entity_state_t baselines[MAX_EDICTS];
 
 // entity and player states are pre-quantized before sending to make delta
 // comparsion easier
@@ -666,7 +666,7 @@ typedef struct {
 	uint16_t end;
 } crop_args_t;
 
-crop_args_t crop_args;
+extern crop_args_t crop_args;
 
 extern const vec3_t bytedirs[NUMVERTEXNORMALS];
 /**
@@ -790,22 +790,22 @@ void       MVD_ParseServerData(uint32_t extrabits);
 int        DirToByte(const vec3_t dir);
 
 
-uint32_t opt;
-uint32_t options;
-struct demo_s demo;
+extern uint32_t opt;
+extern uint32_t options;
+extern struct demo_s demo;
 
-FILE *outfile;
+extern FILE *outfile;
 
 // cumulatively merged configstrings.
-configstring_t cs_merged[MAX_CONFIGSTRINGS];
+extern configstring_t cs_merged[MAX_CONFIGSTRINGS];
 
 // the starting strings sent on connect between serverdata and baselines
-configstring_t cs_initial[MAX_CONFIGSTRINGS];
+extern configstring_t cs_initial[MAX_CONFIGSTRINGS];
 
 // cumulatively merged edicts
-entity_state_t ents_merged[MAX_EDICTS];
+extern entity_state_t ents_merged[MAX_EDICTS];
 
 // Initial state for each edict in the game.
-entity_state_t baselines[MAX_EDICTS];
+extern entity_state_t baselines[MAX_EDICTS];
 
 #endif
